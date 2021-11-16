@@ -117,7 +117,8 @@ ChPromptCommand::ChPromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line
 
 void ChPromptCommand::execute()
 {
-
+  SmallShell& smash = SmallShell::getInstance();
+  smash.setName(this->prompt_name);
 }
 
 ShowPidCommand::~ShowPidCommand() {};
