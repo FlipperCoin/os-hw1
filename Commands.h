@@ -8,7 +8,11 @@
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
+using namespace std;
+
 class Command {
+  private:
+    vector<string> args;
 // TODO: Add your data members
  public:
   Command(const char* cmd_line);
