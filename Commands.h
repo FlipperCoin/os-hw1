@@ -16,7 +16,7 @@ class Command {
 // TODO: Add your data members
  public:
   Command(const char* cmd_line);
-  virtual ~Command() = default;
+  virtual ~Command();
   virtual void execute() = 0;
   //virtual void prepare();
   //virtual void cleanup();
@@ -71,7 +71,7 @@ class GetCurrDirCommand : public BuiltInCommand {
 class ShowPidCommand : public BuiltInCommand {
  public:
   ShowPidCommand(const char* cmd_line);
-  virtual ~ShowPidCommand() {}
+  virtual ~ShowPidCommand();
   void execute() override;
 };
 
@@ -81,7 +81,7 @@ class ChPromptCommand : public BuiltInCommand
     string prompt_name;
   public:
     ChPromptCommand(const char* cmd_line);
-    virtual ~ChPromptCommand() {}
+    virtual ~ChPromptCommand();
     void execute() override;
 };
 

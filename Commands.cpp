@@ -102,6 +102,9 @@ void GetCurrDirCommand::execute() {
   }
   cout << buf << endl;
 }
+
+ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
+
 void ShowPidCommand::execute()
 {
   cout << "smash pid is " << getpid();
@@ -111,6 +114,14 @@ ChPromptCommand::ChPromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line
 {
   this->prompt_name = this->args[1];
 }
+
+void ChPromptCommand::execute()
+{
+
+}
+
+ShowPidCommand::~ShowPidCommand() {};
+ChPromptCommand::~ChPromptCommand() {};
 
 SmallShell::SmallShell() {
 // TODO: add your implementation
