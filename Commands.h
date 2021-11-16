@@ -6,6 +6,8 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
+const std::string WHITESPACE = " \n\r\t\f\v";
+
 class Command {
 // TODO: Add your data members
  public:
