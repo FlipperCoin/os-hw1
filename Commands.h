@@ -164,6 +164,7 @@ class SmallShell {
   JobsList jobs;
   SmallShell();
  public:
+  JobsList jobs;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
@@ -175,6 +176,7 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
+  void setName(string prompt_name);
   // TODO: add extra methods as needed
 };
 
