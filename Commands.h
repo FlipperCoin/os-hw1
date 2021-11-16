@@ -161,6 +161,7 @@ class SmallShell {
  private:
   // TODO: Add your data members
   string prompt_name;
+  JobsList jobs;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
