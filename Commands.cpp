@@ -107,7 +107,7 @@ ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) 
 
 void ShowPidCommand::execute()
 {
-  cout << "smash pid is " << getpid();
+  cout << "smash pid is " << getpid() << "\n";
 }
 
 ChPromptCommand::ChPromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line)
@@ -121,10 +121,20 @@ void ChPromptCommand::execute()
   smash.setName(this->prompt_name);
 }
 
+void SmallShell::setName(string prompt_name)
+{
+  this->prompt_name = prompt_name;
+}
+
+string SmallShell::getName()
+{
+  return this->prompt_name;
+}
+
 ShowPidCommand::~ShowPidCommand() {};
 ChPromptCommand::~ChPromptCommand() {};
 
-SmallShell::SmallShell() {
+SmallShell::SmallShell() : prompt_name("smash") {
 // TODO: add your implementation
 }
 
@@ -161,12 +171,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 void SmallShell::executeCommand(const char *cmd_line) {
   // TODO: Add your implementation here
   // for example:
-  while (1)
-  {
     Command* cmd = CreateCommand(cmd_line);
     cmd->execute();
-  }
-  
-  
   //Please note that you must fork smash process for some commands (e.g., external commands....)
 }

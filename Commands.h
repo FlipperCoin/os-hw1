@@ -104,8 +104,8 @@ class JobsList {
   };
  // TODO: Add your data members
  public:
-  JobsList();
-  ~JobsList();
+  JobsList() = default;
+  ~JobsList() = default;
   void addJob(Command* cmd, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
@@ -175,6 +175,7 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
+  string getName();
   void setName(string prompt_name);
   // TODO: add extra methods as needed
 };
