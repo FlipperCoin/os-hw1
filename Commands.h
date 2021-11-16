@@ -11,12 +11,12 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 using namespace std;
 
 class Command {
-  private:
+  protected:
     vector<string> args;
 // TODO: Add your data members
  public:
   Command(const char* cmd_line);
-  virtual ~Command();
+  virtual ~Command() = default;
   virtual void execute() = 0;
   //virtual void prepare();
   //virtual void cleanup();
@@ -25,7 +25,7 @@ class Command {
 
 class BuiltInCommand : public Command {
  public:
-  BuiltInCommand(const char* cmd_line);
+  BuiltInCommand(const char* cmd_line) : Command(cmd_line) {};
   virtual ~BuiltInCommand() {}
 };
 
@@ -75,6 +75,16 @@ class ShowPidCommand : public BuiltInCommand {
   void execute() override;
 };
 
+class ChPromptCommand : public BuiltInCommand
+{
+  private:
+    string prompt_name;
+  public:
+    ChPromptCommand(const char* cmd_line);
+    virtual ~ChPromptCommand() {}
+    void execute() override;
+};
+
 class JobsList;
 class QuitCommand : public BuiltInCommand {
 // TODO: Add your data members public:
@@ -82,6 +92,7 @@ class QuitCommand : public BuiltInCommand {
   virtual ~QuitCommand() {}
   void execute() override;
 };
+
 
 
 
@@ -149,6 +160,7 @@ class HeadCommand : public BuiltInCommand {
 class SmallShell {
  private:
   // TODO: Add your data members
+  string prompt_name;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
