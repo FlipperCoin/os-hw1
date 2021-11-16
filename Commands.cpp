@@ -98,6 +98,7 @@ void GetCurrDirCommand::execute() {
   int size = PATH_MAX+1;
   char buf[size];
   if (!getcwd(buf,size)) {
+    // TODO: perror
     return;
   }
   cout << buf << endl;
