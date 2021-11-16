@@ -25,7 +25,7 @@ class Command {
 
 class BuiltInCommand : public Command {
  public:
-  BuiltInCommand(const char* cmd_line);
+  BuiltInCommand(const char* cmd_line) : Command(cmd_line) {};
   virtual ~BuiltInCommand() {}
 };
 
@@ -63,7 +63,7 @@ class ChangeDirCommand : public BuiltInCommand {
 
 class GetCurrDirCommand : public BuiltInCommand {
  public:
-  GetCurrDirCommand(const char* cmd_line);
+  GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
   virtual ~GetCurrDirCommand() {}
   void execute() override;
 };

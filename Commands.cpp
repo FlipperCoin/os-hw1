@@ -5,6 +5,7 @@
 #include <sstream>
 #include <sys/wait.h>
 #include <iomanip>
+#include <limits.h>
 #include "Commands.h"
 
 using namespace std;
@@ -91,6 +92,17 @@ Command::Command(const char* cmd_line) {
   delete[] args;
 }
 
+Command::~Command() {}
+
+void GetCurrDirCommand::execute() {
+  int size = PATH_MAX+1;
+  char buf[size];
+  if (!getcwd(buf,size)) {
+    return;
+  }
+  cout << buf << endl;
+}
+
 SmallShell::SmallShell() {
 // TODO: add your implementation
 }
@@ -111,15 +123,15 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   if (firstWord.compare("pwd") == 0) {
     return new GetCurrDirCommand(cmd_line);
   }
-  else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
-  }
+  // else if (firstWord.compare("showpid") == 0) {
+  //   return new ShowPidCommand(cmd_line);
+  // }
   // else if() {
     
   // }
-  else {
-    return new ExternalCommand(cmd_line);
-  }
+  // else {
+  //   return new ExternalCommand(cmd_line);
+  // }
   
   return nullptr;
 }
