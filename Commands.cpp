@@ -98,7 +98,7 @@ void GetCurrDirCommand::execute() {
   int size = PATH_MAX+1;
   char buf[size];
   if (!getcwd(buf,size)) {
-    // TODO: perror
+    perror("smash error: getcwd failed");
     return;
   }
   cout << buf << endl;
@@ -113,7 +113,7 @@ void ShowPidCommand::execute()
 
 ChPromptCommand::ChPromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line)
 {
-  this->prompt_name = this->args[1];
+  this->prompt_name = this->args.size() > 1 ? this->args[1] : DEFAULT_PROMPT;
 }
 
 void ChPromptCommand::execute()
@@ -135,7 +135,7 @@ string SmallShell::getName()
 ShowPidCommand::~ShowPidCommand() {};
 ChPromptCommand::~ChPromptCommand() {};
 
-SmallShell::SmallShell() : prompt_name("smash") {
+SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT) {
 // TODO: add your implementation
 }
 
@@ -173,6 +173,6 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // TODO: Add your implementation here
   // for example:
     Command* cmd = CreateCommand(cmd_line);
-    cmd->execute();
+    if (cmd) cmd->execute();
   //Please note that you must fork smash process for some commands (e.g., external commands....)
 }

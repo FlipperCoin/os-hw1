@@ -5,6 +5,7 @@
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+#define DEFAULT_PROMPT "smash"
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -161,7 +162,6 @@ class SmallShell {
  private:
   // TODO: Add your data members
   string prompt_name;
-  JobsList jobs;
   SmallShell();
  public:
   JobsList jobs;
