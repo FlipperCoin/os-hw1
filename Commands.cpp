@@ -76,8 +76,22 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-void _serror(string sysname) {
+void _serror(string error) {
+  cerr << ("smash error: " + error).c_str() << endl;
+}
+
+void _serrorSys(string sysname) {
   perror(("smash error: " + sysname + " failed").c_str());
+}
+
+char* _getCwd() {
+  int size = PATH_MAX+1;
+  char* buf = new char[size];
+  if (!getcwd(buf,size)) {
+    _serrorSys("getcwd");
+    return nullptr;
+  }
+  return buf;
 }
 
 // TODO: Add your implementation for classes in Commands.h 
@@ -99,13 +113,12 @@ Command::Command(const char* cmd_line) {
 Command::~Command() {}
 
 void GetCurrDirCommand::execute() {
-  int size = PATH_MAX+1;
-  char buf[size];
-  if (!getcwd(buf,size)) {
-    _serror("getcwd");
+  char* cwd = _getCwd();
+  if (!cwd) {
     return;
   }
-  cout << buf << endl;
+  cout << cwd << endl;
+  delete[] cwd;
 }
 
 ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
@@ -126,6 +139,47 @@ void ChPromptCommand::execute()
   smash.setName(this->prompt_name);
 }
 
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line, string* plast_pwd) : BuiltInCommand(cmd_line) {
+  this->plast_pwd = plast_pwd;
+}
+
+void ChangeDirCommand::execute() {
+  if (args.size() <= 1) {
+    return;
+  }
+
+  if (args.size() > 2) {
+    _serror("cd: too many arguments");
+    return;
+  }
+
+  string new_wd = args[1];
+
+  if (args[1] == "-") {
+      if (plast_pwd->empty()) {
+        _serror("cd: OLDPWD not set");
+        return;
+      }
+      
+      new_wd = *plast_pwd;
+  }
+
+  char *new_last_pwd= _getCwd();
+
+  if (-1 == chdir(new_wd.c_str())) {
+    _serrorSys("chdir");
+    return;
+  }
+
+  // TODO: not sure what to do on failure, prob undefined behaviour by segel..
+  if (new_last_pwd) {
+    *plast_pwd = string(new_last_pwd);
+    delete[] new_last_pwd;
+  } else {
+    *plast_pwd = "";
+  }
+}
+
 void SmallShell::setName(string prompt_name)
 {
   this->prompt_name = prompt_name;
@@ -139,12 +193,13 @@ string SmallShell::getName()
 ShowPidCommand::~ShowPidCommand() {};
 ChPromptCommand::~ChPromptCommand() {};
 
-SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT) {
+SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()) {
 // TODO: add your implementation
 }
 
 SmallShell::~SmallShell() {
 // TODO: add your implementation
+  delete plast_pwd;
 }
 
 /**
@@ -166,6 +221,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   { 
     return new ChPromptCommand(cmd_line);
   }
+  else if (firstWord.compare("cd") == 0) {
+    return new ChangeDirCommand(cmd_line, this->plast_pwd);
+  }
   else {
     // return new ExternalCommand(cmd_line);
   }
@@ -177,6 +235,9 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // TODO: Add your implementation here
   // for example:
     Command* cmd = CreateCommand(cmd_line);
-    if (cmd) cmd->execute();
+    if (cmd) {
+      cmd->execute();
+      delete cmd;
+    }
   //Please note that you must fork smash process for some commands (e.g., external commands....)
 }

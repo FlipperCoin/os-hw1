@@ -56,10 +56,12 @@ class RedirectionCommand : public Command {
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-// TODO: Add your data members public:
-  ChangeDirCommand(const char* cmd_line, char** plastPwd);
-  virtual ~ChangeDirCommand() {}
-  void execute() override;
+  private:
+    string* plast_pwd;
+  public:
+    ChangeDirCommand(const char* cmd_line, string* plast_pwd);
+    virtual ~ChangeDirCommand() {}
+    void execute() override;
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
@@ -162,6 +164,7 @@ class SmallShell {
  private:
   // TODO: Add your data members
   string prompt_name;
+  string *plast_pwd;
   SmallShell();
  public:
   JobsList jobs;
