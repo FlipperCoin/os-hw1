@@ -76,6 +76,10 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
+void _serror(string sysname) {
+  perror(("smash error: " + sysname + " failed").c_str());
+}
+
 // TODO: Add your implementation for classes in Commands.h 
 Command::Command(const char* cmd_line) {
   char** args = new char*[COMMAND_MAX_ARGS];
@@ -98,7 +102,7 @@ void GetCurrDirCommand::execute() {
   int size = PATH_MAX+1;
   char buf[size];
   if (!getcwd(buf,size)) {
-    perror("smash error: getcwd failed");
+    _serror("getcwd");
     return;
   }
   cout << buf << endl;
