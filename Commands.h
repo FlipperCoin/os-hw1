@@ -96,31 +96,39 @@ class QuitCommand : public BuiltInCommand {
   void execute() override;
 };
 
-
-
-
+typedef unsigned int jobid_t;
 
 class JobsList {
  public:
   class JobEntry {
-   // TODO: Add your data members
+    public:
+      jobid_t jid;
+      pid_t pid;
+      vector<string> args;
+      time_t start_time; // in seconds
+      bool is_stopped;
   };
- // TODO: Add your data members
- public:
-  JobsList() = default;
-  ~JobsList() = default;
-  void addJob(Command* cmd, bool isStopped = false);
-  void printJobsList();
-  void killAllJobs();
-  void removeFinishedJobs();
-  JobEntry * getJobById(int jobId);
-  void removeJobById(int jobId);
-  JobEntry * getLastJob(int* lastJobId);
-  JobEntry *getLastStoppedJob(int *jobId);
-  // TODO: Add extra methods or modify exisitng ones as needed
+  private:
+    vector<JobEntry> jobs;
+    void printJobEntry(JobEntry& job);
+  // TODO: Add your data members
+  public:
+    JobsList() = default;
+    ~JobsList() = default;
+    void addJob(Command* cmd, bool isStopped = false);
+    void printJobsList();
+    void killAllJobs();
+    void removeFinishedJobs();
+    JobEntry * getJobById(int jobId);
+    void removeJobById(int jobId);
+    JobEntry * getLastJob(int* lastJobId);
+    JobEntry *getLastStoppedJob(int *jobId);
+    // TODO: Add extra methods or modify exisitng ones as needed
 };
 
 class JobsCommand : public BuiltInCommand {
+  private:
+    JobsList* jobs;
  // TODO: Add your data members
  public:
   JobsCommand(const char* cmd_line, JobsList* jobs);

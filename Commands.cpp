@@ -180,6 +180,14 @@ void ChangeDirCommand::execute() {
   }
 }
 
+JobsCommand::JobsCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line) {
+  this->jobs = jobs;
+}
+
+void JobsCommand::execute() {
+  jobs->printJobsList();
+}
+
 void SmallShell::setName(string prompt_name)
 {
   this->prompt_name = prompt_name;
@@ -200,6 +208,33 @@ SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()) 
 SmallShell::~SmallShell() {
 // TODO: add your implementation
   delete plast_pwd;
+}
+
+// TODO: why is there a space/tab in the last job in every example in the PDF
+// TODO: make sure jid is sorted!
+void JobsList::printJobEntry(JobEntry& job) {
+  cout << "[" << job.jid << "] ";
+  // TODO: should we print the orig cmd as it was typed, or is this reconstruction fine
+  for (string& arg : job.args) {
+    cout << arg << " ";
+  }
+  cout << ": ";
+  time_t now = time(nullptr);
+  if ((time_t)-1 == now) {
+    _serrorSys("time");
+  }
+  cout << job.pid << " " << difftime(now, job.start_time);
+  if (job.is_stopped) {
+    cout << " (stopped)";
+  }
+  cout << endl;
+}
+
+void JobsList::printJobsList() {
+  for (JobEntry& job : jobs) {
+    // TODO: delete all finished jobs!
+    printJobEntry(job);
+  }
 }
 
 /**
@@ -223,6 +258,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("cd") == 0) {
     return new ChangeDirCommand(cmd_line, this->plast_pwd);
+  }
+  else if (firstWord.compare("jobs") == 0) {
+    return new JobsCommand(cmd_line, &(this->jobs));
   }
   else {
     // return new ExternalCommand(cmd_line);
