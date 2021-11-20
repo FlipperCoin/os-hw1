@@ -314,8 +314,8 @@ void JobsList::clearZombieJobs() {
     jobs.end(),
     [](JobEntry const& job) {
       int wstatus;
-      waitpid(job.pid,&wstatus,WNOHANG);
-      return (WIFEXITED(wstatus) || WIFSIGNALED(wstatus));
+      return (0 != waitpid(job.pid,&wstatus,WNOHANG) 
+        && (WIFEXITED(wstatus) || WIFSIGNALED(wstatus)));
     });
 
   jobs.erase(end,jobs.end());
