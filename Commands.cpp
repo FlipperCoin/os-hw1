@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <iomanip>
 #include <limits.h>
+#include <algorithm>
 #include "Commands.h"
 
 using namespace std;
@@ -53,7 +54,7 @@ int _parseCommandLine(const char* cmd_line, char** args) {
   FUNC_EXIT()
 }
 
-bool _isBackgroundComamnd(const char* cmd_line) {
+bool _isBackgroundCommand(const char* cmd_line) {
   const string str(cmd_line);
   return str[str.find_last_not_of(WHITESPACE)] == '&';
 }
@@ -96,6 +97,8 @@ char* _getCwd() {
 
 // TODO: Add your implementation for classes in Commands.h 
 Command::Command(const char* cmd_line) {
+  this->cmd_line = string(cmd_line);
+
   char** args = new char*[COMMAND_MAX_ARGS];
   for (int i = 0; i < COMMAND_MAX_ARGS; i++) {
     args[i] = new char[COMMAND_ARGS_MAX_LENGTH];
@@ -188,6 +191,57 @@ void JobsCommand::execute() {
   jobs->printJobsList();
 }
 
+ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs) : Command(cmd_line) {
+  this->jobs = jobs;
+  this->isBackgroundCommand = _isBackgroundCommand(cmd_line);
+}
+
+char* ExternalCommand::createCmdStr() {
+  char *cmd_line_noamp = new char[cmd_line.length()+1];
+  strcpy(cmd_line_noamp, cmd_line.c_str());
+  _removeBackgroundSign(cmd_line_noamp);
+  return cmd_line_noamp;
+}
+
+void ExternalCommand::execute() {
+  pid_t pid = fork();
+  if (-1 == pid) {
+    _serrorSys("fork");
+    return;
+  }
+
+  if (pid == 0) {
+    if (-1 == setpgrp()) {
+      _serrorSys("setgrp");
+      exit(1);
+    }
+    char *cmd_str = createCmdStr();
+    char bash_path[10];
+    strcpy(bash_path,"/bin/bash");
+    char bash_flag[3];
+    strcpy(bash_flag,"-c");
+    char* argv[4] = {bash_path,bash_flag,cmd_str,nullptr};
+    execv(bash_path,argv);
+    _serrorSys("execv");
+    delete cmd_str;
+  }
+  
+  int wstatus;
+  if (this->isBackgroundCommand) {
+    this->jobs->addJob(this, pid);
+  } else {
+    int err = waitpid(pid, &wstatus, WUNTRACED);
+    if (-1 == err) {
+      _serrorSys("waitpid");
+    }
+    // TODO: should print "smash: process <foreground-PID> was stopped"?
+    // or should it be in shell's SIGSTP handler (after sending the stop signal)?
+    // if (WIFSTOPPED(wstatus)) {
+    //   ...
+    // }
+  }
+}
+
 void SmallShell::setName(string prompt_name)
 {
   this->prompt_name = prompt_name;
@@ -222,6 +276,7 @@ void JobsList::printJobEntry(JobEntry& job) {
   time_t now = time(nullptr);
   if ((time_t)-1 == now) {
     _serrorSys("time");
+    // TODO: stop? print something else?
   }
   cout << job.pid << " " << difftime(now, job.start_time);
   if (job.is_stopped) {
@@ -231,11 +286,43 @@ void JobsList::printJobEntry(JobEntry& job) {
 }
 
 void JobsList::printJobsList() {
+  clearZombieJobs();
   for (JobEntry& job : jobs) {
-    // TODO: delete all finished jobs!
     printJobEntry(job);
   }
 }
+
+void JobsList::addJob(Command* cmd, pid_t pid, bool isStopped) {
+  clearZombieJobs();
+
+  int max_jid = !jobs.empty() ? jobs.end()->jid : 0;
+  int jid = max_jid+1;
+
+  time_t now = time(nullptr);
+  if ((time_t)-1 == now) {
+    _serrorSys("time");
+    // TODO: ignore? fail?
+  }
+
+  JobEntry job(jid,pid,cmd->args,cmd->cmd_line,now,isStopped);
+  jobs.push_back(job);
+}
+
+void JobsList::clearZombieJobs() {
+  auto end = remove_if(
+    jobs.begin(),
+    jobs.end(),
+    [](JobEntry const& job) {
+      int wstatus;
+      waitpid(job.pid,&wstatus,WNOHANG);
+      return (WIFEXITED(wstatus) || WIFSIGNALED(wstatus));
+    });
+
+  jobs.erase(end,jobs.end());
+}
+
+JobsList::JobEntry::JobEntry(jobid_t jid, pid_t pid, vector<string> args, string cmd_line, time_t start_time, bool is_stopped)
+  : jid(jid), pid(pid), args(args), cmd_line(cmd_line), start_time(start_time), is_stopped(is_stopped) {} 
 
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
@@ -263,7 +350,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new JobsCommand(cmd_line, &(this->jobs));
   }
   else {
-    // return new ExternalCommand(cmd_line);
+    return new ExternalCommand(cmd_line, &(this->jobs));
   }
   
   return nullptr;

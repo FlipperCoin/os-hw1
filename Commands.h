@@ -12,7 +12,8 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 using namespace std;
 
 class Command {
-  protected:
+  public:
+    string cmd_line;
     vector<string> args;
 // TODO: Add your data members
  public:
@@ -30,11 +31,16 @@ class BuiltInCommand : public Command {
   virtual ~BuiltInCommand() {}
 };
 
+class JobsList;
 class ExternalCommand : public Command {
- public:
-  ExternalCommand(const char* cmd_line);
-  virtual ~ExternalCommand() {}
-  void execute() override;
+  private:
+    bool isBackgroundCommand;
+    JobsList* jobs;
+    char* createCmdStr();
+  public:
+    ExternalCommand(const char* cmd_line, JobsList* jobs);
+    virtual ~ExternalCommand() {}
+    void execute() override;
 };
 
 class PipeCommand : public Command {
@@ -88,7 +94,6 @@ class ChPromptCommand : public BuiltInCommand
     void execute() override;
 };
 
-class JobsList;
 class QuitCommand : public BuiltInCommand {
 // TODO: Add your data members public:
   QuitCommand(const char* cmd_line, JobsList* jobs);
@@ -105,17 +110,21 @@ class JobsList {
       jobid_t jid;
       pid_t pid;
       vector<string> args;
+      string cmd_line;
       time_t start_time; // in seconds
       bool is_stopped;
+
+      JobEntry(jobid_t jid, pid_t pid, vector<string> args, string cmd_line, time_t start_time, bool is_stopped);
   };
   private:
     vector<JobEntry> jobs;
     void printJobEntry(JobEntry& job);
+    void clearZombieJobs();
   // TODO: Add your data members
   public:
     JobsList() = default;
     ~JobsList() = default;
-    void addJob(Command* cmd, bool isStopped = false);
+    void addJob(Command* cmd, pid_t pid, bool isStopped = false);
     void printJobsList();
     void killAllJobs();
     void removeFinishedJobs();
