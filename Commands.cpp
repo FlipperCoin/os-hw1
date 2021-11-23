@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <limits.h>
 #include <algorithm>
+#include <fcntl.h>
 #include "Commands.h"
 
 using namespace std;
@@ -331,7 +332,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 	// For example:
 
   string cmd_s = _trim(string(cmd_line));
-  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(WHITESPACE));
 
   if (firstWord.compare("pwd") == 0) {
     return new GetCurrDirCommand(cmd_line);
@@ -357,12 +358,135 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
-  // TODO: Add your implementation here
-  // for example:
-    Command* cmd = CreateCommand(cmd_line);
-    if (cmd) {
-      cmd->execute();
-      delete cmd;
+  // TODO: fix & striping.
+  Command* cmd1 = nullptr;
+  Command* cmd2 = nullptr;
+
+  int stdin_copy = dup(0);
+  int stdout_copy = dup(1);
+  int stderr_copy = dup(2);
+
+  
+  string cmd_s = string(cmd_line);
+  size_t pipe_index_s = cmd_s.find_first_of(">|");
+
+  if(pipe_index_s != string::npos)
+  {
+    if(cmd_s.substr(pipe_index_s,1) == ">")
+    {
+      int file;
+      if(cmd_s.substr(pipe_index_s,2) == ">>")
+      {
+        file = open(cmd_s.substr(pipe_index_s+2,cmd_s.size()-pipe_index_s+2).c_str(),O_CREAT|O_WRONLY|O_APPEND,0644);
+        //CHECK MODE NUMBERS
+      }
+      else
+      {
+        file = open(cmd_s.substr(pipe_index_s+1,cmd_s.size()-pipe_index_s+1).c_str(),O_CREAT|O_WRONLY|O_TRUNC,0644);
+        //CHECK MODE NUMBERS
+      }
+      
+      if(file == -1)
+      {
+        _serrorSys("open");
+        return;    
+      }
+      
+      close(1);
+      dup(file);
+      char *cmd_line_noamp = new char[cmd_s.length()+1];
+      strcpy(cmd_line_noamp, cmd_s.substr(0,pipe_index_s-1).c_str());
+      _removeBackgroundSign(cmd_line_noamp);
+      cmd1 = CreateCommand(cmd_line_noamp);
+      if (cmd1)
+      {
+        cmd1->execute();
+        delete cmd1;
+      }
+      delete cmd_line_noamp;
+      dup2(stdout_copy,1);
+      close(file);    
     }
+    else if(cmd_s.substr(pipe_index_s,1) == "|")
+    {
+      int cmd_pipe[2];
+      pipe(cmd_pipe);
+      pid_t son = fork();
+      if (son < 0)
+      {
+        _serrorSys("fork");
+      }
+      
+      if(son == 0) // son to execute cmd2.
+      {
+        close(0);
+        close(cmd_pipe[1]);
+        dup(cmd_pipe[0]);
+        char *cmd2_line_noamp = new char[cmd_s.length()+1];
+
+        if (cmd_s.substr(pipe_index_s,2) != "|&")
+        {
+          strcpy(cmd2_line_noamp, cmd_s.substr(pipe_index_s+1,cmd_s.size()-pipe_index_s-1).c_str());
+        }
+        else
+        {
+          strcpy(cmd2_line_noamp, cmd_s.substr(pipe_index_s+2,cmd_s.size()-pipe_index_s-2).c_str());
+        }
+        _removeBackgroundSign(cmd2_line_noamp);
+        cmd2 = CreateCommand(cmd2_line_noamp);
+        if (cmd2)
+        {
+          cmd2->execute();
+          delete cmd2;
+        }
+        delete cmd2_line_noamp;
+        dup2(stdin_copy,0);
+        close(cmd_pipe[0]);
+        exit(0);
+      }
+      else
+      {
+        if (cmd_s.substr(pipe_index_s,2) == "|&")
+        {
+          close(2);
+        }
+        else
+        {
+          close(1);
+        }
+        close(cmd_pipe[0]);
+        dup(cmd_pipe[1]);
+        char *cmd1_line_noamp = new char[cmd_s.length()+1];
+        strcpy(cmd1_line_noamp, cmd_s.substr(0,pipe_index_s-1).c_str());
+        _removeBackgroundSign(cmd1_line_noamp);
+        cmd1 = CreateCommand(cmd1_line_noamp);
+        if (cmd1)
+        {
+          cmd1->execute();
+          delete cmd1;
+        }
+        delete cmd1_line_noamp;
+        close(cmd_pipe[1]);
+
+        if (cmd_s.substr(pipe_index_s,2) == "|&")
+        {
+          dup2(stderr_copy,2);
+        }
+        else
+        {
+          dup2(stdout_copy,1);
+        }
+      }
+      waitpid(son,NULL,0);
+    }
+  }
+  else
+  {
+    cmd1 = CreateCommand(cmd_line);
+    if (cmd1) {
+      cmd1->execute();
+      delete cmd1;
+    }
+  } 
   //Please note that you must fork smash process for some commands (e.g., external commands....)
 }
