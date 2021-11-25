@@ -279,7 +279,7 @@ void JobsList::printJobEntry(JobEntry& job) {
     _serrorSys("time");
     // TODO: stop? print something else?
   }
-  cout << job.pid << " " << difftime(now, job.start_time);
+  cout << job.pid << " " << difftime(now, job.start_time) << " secs";
   if (job.is_stopped) {
     cout << " (stopped)";
   }
@@ -293,11 +293,20 @@ void JobsList::printJobsList() {
   }
 }
 
+
 void JobsList::addJob(Command* cmd, pid_t pid, bool isStopped) {
   clearZombieJobs();
 
-  int max_jid = !jobs.empty() ? jobs.end()->jid : 0;
-  int jid = max_jid+1;
+  //int max_jid = !jobs.empty() ? jobs.end()->jid : 0; //this doesnt work correctly for some reason!?
+  if(!jobs.empty())
+  {
+    next_jid++; // used inernal max counter.
+  }
+  else
+  {
+    next_jid = 1; // reset inernal max counter when list is empty.
+  }
+  
 
   time_t now = time(nullptr);
   if ((time_t)-1 == now) {
@@ -305,7 +314,7 @@ void JobsList::addJob(Command* cmd, pid_t pid, bool isStopped) {
     // TODO: ignore? fail?
   }
 
-  JobEntry job(jid,pid,cmd->args,cmd->cmd_line,now,isStopped);
+  JobEntry job(next_jid,pid,cmd->args,cmd->cmd_line,now,isStopped);
   jobs.push_back(job);
 }
 
@@ -322,9 +331,52 @@ void JobsList::clearZombieJobs() {
   jobs.erase(end,jobs.end());
 }
 
+JobsList::JobEntry* JobsList::getJobById(jobid_t jobId)
+{
+  for (int i = 0; i < int(jobs.size()); i++)
+  {
+    if(jobs[i].jid == jobId)
+    {
+      return &jobs[i];
+    }
+  }
+  
+  return nullptr;
+}
+
 JobsList::JobEntry::JobEntry(jobid_t jid, pid_t pid, vector<string> args, string cmd_line, time_t start_time, bool is_stopped)
   : jid(jid), pid(pid), args(args), cmd_line(cmd_line), start_time(start_time), is_stopped(is_stopped) {} 
 
+
+KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line)
+{
+  this->jobs =  jobs;
+  this->jid = stoi(this->args[2]);
+  this->signum = stoi(args[1]);
+
+}
+
+void KillCommand::execute()
+{
+
+  if(args.size() > 3 || to_string(jid) != this->args[2] || to_string(signum) != args[1]) //TODO: check formating of the -<signum> arg
+  {
+    _serror("kill: invalid arguments");
+  }
+  JobsList::JobEntry* job = jobs->getJobById(jid);
+  
+  if(!job)
+  {
+    _serror("kill: job-id <job-id> does not exist");
+    return;
+  }
+
+
+  if(kill(job->pid,-1*signum) != 0)
+  {
+    _serrorSys("kill");
+  }
+}
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
@@ -349,6 +401,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("jobs") == 0) {
     return new JobsCommand(cmd_line, &(this->jobs));
+  }
+  else if (firstWord.compare("kill") == 0) {
+    return new KillCommand(cmd_line, &(this->jobs));
   }
   else {
     return new ExternalCommand(cmd_line, &(this->jobs));

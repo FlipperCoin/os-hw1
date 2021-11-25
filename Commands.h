@@ -118,6 +118,7 @@ class JobsList {
   };
   private:
     vector<JobEntry> jobs;
+    jobid_t next_jid;
     void printJobEntry(JobEntry& job);
     void clearZombieJobs();
   // TODO: Add your data members
@@ -128,10 +129,11 @@ class JobsList {
     void printJobsList();
     void killAllJobs();
     void removeFinishedJobs();
-    JobEntry * getJobById(int jobId);
-    void removeJobById(int jobId);
-    JobEntry * getLastJob(int* lastJobId);
-    JobEntry *getLastStoppedJob(int *jobId);
+    JobEntry * getJobById(jobid_t jobId);
+    void removeJobById(jobid_t jobId);
+    JobEntry * getLastJob(jobid_t* lastJobId);
+    JobEntry *getLastStoppedJob(jobid_t *jobId);
+    // jobid_t updateNextJid(); not needed rn
     // TODO: Add extra methods or modify exisitng ones as needed
 };
 
@@ -146,7 +148,10 @@ class JobsCommand : public BuiltInCommand {
 };
 
 class KillCommand : public BuiltInCommand {
- // TODO: Add your data members
+ private:
+  JobsList* jobs;
+  jobid_t jid;
+  int signum;
  public:
   KillCommand(const char* cmd_line, JobsList* jobs);
   virtual ~KillCommand() {}
