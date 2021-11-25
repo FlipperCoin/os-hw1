@@ -11,6 +11,9 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 
 using namespace std;
 
+void _serror(string error);
+void _serrorSys(string sysname);
+
 class Command {
   public:
     string cmd_line;
@@ -35,10 +38,11 @@ class JobsList;
 class ExternalCommand : public Command {
   private:
     bool isBackgroundCommand;
+    pid_t* fg_pid;
     JobsList* jobs;
     char* createCmdStr();
   public:
-    ExternalCommand(const char* cmd_line, JobsList* jobs);
+    ExternalCommand(const char* cmd_line, JobsList* jobs,pid_t* fg_pid);
     virtual ~ExternalCommand() {}
     void execute() override;
 };
@@ -190,6 +194,7 @@ class SmallShell {
   SmallShell();
  public:
   JobsList jobs;
+  pid_t fg_pid;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
