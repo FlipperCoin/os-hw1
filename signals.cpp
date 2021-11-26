@@ -12,9 +12,9 @@ void ctrlZHandler(int sig_num) {
 
 void ctrlCHandler(int sig_num) {
   SmallShell& smash = SmallShell::getInstance();
+  cout << "smash: got ctrl-C" << endl;
   if(smash.fg_pid != getpid())
   {
-    cout << "smash: got ctrl-C" << endl;
     cout << "smash: process " << smash.fg_pid << " was killed" << endl;
     if(kill(smash.fg_pid,SIGKILL) == -1)
     {

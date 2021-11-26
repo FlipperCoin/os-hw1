@@ -254,7 +254,7 @@ string SmallShell::getName()
 ShowPidCommand::~ShowPidCommand() {};
 ChPromptCommand::~ChPromptCommand() {};
 
-SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()) {
+SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()) {
 // TODO: add your implementation
 }
 
@@ -487,6 +487,10 @@ void SmallShell::executeCommand(const char *cmd_line) {
     
     if(son == 0) // son to execute cmd2.
     {
+      if (-1 == setpgrp()) {
+        _serrorSys("setgrp");
+        exit(1);
+      }
       close(0);
       close(cmd_pipe[1]);
       dup(cmd_pipe[0]);
