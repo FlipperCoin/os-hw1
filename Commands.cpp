@@ -192,7 +192,7 @@ void JobsCommand::execute() {
   jobs->printJobsList();
 }
 
-ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs,pid_t* fg_pid) : Command(cmd_line), fg_pid(fg_pid) 
+ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, Command** fg_cmd) : Command(cmd_line), fg_pid(fg_pid), fg_cmd(fg_cmd)
 {
   this->jobs = jobs;
   this->isBackgroundCommand = _isBackgroundCommand(cmd_line);
@@ -228,6 +228,7 @@ void ExternalCommand::execute() {
     this->jobs->addJob(this, pid);
   } else {
     *fg_pid = pid;
+    *fg_cmd = this;
     int err = waitpid(pid, &wstatus, WUNTRACED);
     *fg_pid = getpid();
     if (-1 == err) {
@@ -413,7 +414,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new KillCommand(cmd_line, &(this->jobs));
   }
   else {
-    return new ExternalCommand(cmd_line, &(this->jobs),&fg_pid);
+    return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
   }
   
   return nullptr;

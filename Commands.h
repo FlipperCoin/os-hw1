@@ -39,10 +39,11 @@ class ExternalCommand : public Command {
   private:
     bool isBackgroundCommand;
     pid_t* fg_pid;
+    Command** fg_cmd;
     JobsList* jobs;
     char* createCmdStr();
   public:
-    ExternalCommand(const char* cmd_line, JobsList* jobs,pid_t* fg_pid);
+    ExternalCommand(const char* cmd_line, JobsList* jobs,pid_t* fg_pid, Command** fg_cmd);
     virtual ~ExternalCommand() {}
     void execute() override;
 };
@@ -195,6 +196,7 @@ class SmallShell {
  public:
   JobsList jobs;
   pid_t fg_pid;
+  Command *fg_cmd;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
