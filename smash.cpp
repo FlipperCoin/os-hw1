@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
     
     struct sigaction sa, old_sa;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_SIGINFO;
+    sa.sa_flags = SA_SIGINFO | SA_RESTART;
     sa.sa_sigaction = alarmHandler;
     if(sigaction(SIGALRM, &sa, &old_sa)==-1) {
         // TODO: this msg is not official, check what needs to be done
