@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <algorithm>
 #include <fcntl.h>
+#include <signal.h>
 #include "Commands.h"
 
 using namespace std;
@@ -192,7 +193,7 @@ void JobsCommand::execute() {
   jobs->printJobsList();
 }
 
-ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, Command** fg_cmd) : Command(cmd_line), fg_pid(fg_pid), fg_cmd(fg_cmd)
+ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd) : Command(cmd_line), fg_pid(fg_pid), fg_cmd(fg_cmd)
 {
   this->jobs = jobs;
   this->isBackgroundCommand = _isBackgroundCommand(cmd_line);
@@ -225,10 +226,10 @@ void ExternalCommand::execute() {
   
   int wstatus;
   if (this->isBackgroundCommand) {
-    this->jobs->addJob(this, pid);
+    this->jobs->addJob(this->cmd_line, pid);
   } else {
     *fg_pid = pid;
-    *fg_cmd = this;
+    *fg_cmd = this->cmd_line;
     int err = waitpid(pid, &wstatus, WUNTRACED);
     *fg_pid = getpid();
     if (-1 == err) {
@@ -268,10 +269,8 @@ SmallShell::~SmallShell() {
 // TODO: make sure jid is sorted!
 void JobsList::printJobEntry(JobEntry& job) {
   cout << "[" << job.jid << "] ";
-  // TODO: should we print the orig cmd as it was typed, or is this reconstruction fine
-  for (string& arg : job.args) {
-    cout << arg << " ";
-  }
+  // TODO: should we print the orig cmd as it was typed
+  cout << job.cmd_line;
   cout << ": ";
   time_t now = time(nullptr);
   if ((time_t)-1 == now) {
@@ -293,7 +292,7 @@ void JobsList::printJobsList() {
 }
 
 
-void JobsList::addJob(Command* cmd, pid_t pid, bool isStopped) {
+void JobsList::addJob(string cmd_line, pid_t pid, bool isStopped) {
   clearZombieJobs();
 
   //int max_jid = !jobs.empty() ? jobs.end()->jid : 0; //this doesnt work correctly for some reason!?
@@ -313,7 +312,7 @@ void JobsList::addJob(Command* cmd, pid_t pid, bool isStopped) {
     // TODO: ignore? fail?
   }
 
-  JobEntry job(next_jid,pid,cmd->args,cmd->cmd_line,now,isStopped);
+  JobEntry job(next_jid,pid,cmd_line,now,isStopped);
   jobs.push_back(job);
 }
 
@@ -343,8 +342,35 @@ JobsList::JobEntry* JobsList::getJobById(jobid_t jobId)
   return nullptr;
 }
 
-JobsList::JobEntry::JobEntry(jobid_t jid, pid_t pid, vector<string> args, string cmd_line, time_t start_time, bool is_stopped)
-  : jid(jid), pid(pid), args(args), cmd_line(cmd_line), start_time(start_time), is_stopped(is_stopped) {} 
+JobsList::JobEntry* JobsList::getLastJob(jobid_t* jobId) {
+  if (jobs.size() == 0) return nullptr;
+
+  return &jobs[jobs.size()-1];
+}
+
+JobsList::JobEntry* JobsList::getLastStoppedJob(jobid_t* jobId) {
+  for (int i = jobs.size()-1; i >= 0; i--)
+  {
+    if (jobs[i].is_stopped) {
+      *jobId = jobs[i].jid;
+      return &jobs[i];
+    }
+  }
+  
+  return nullptr;
+}
+
+int JobsList::size() {
+  return jobs.size();
+}
+
+void JobsList::removeJobById(jobid_t jid) {
+  auto found = find_if(jobs.begin(),jobs.end(),[jid](JobEntry const& job) {return job.jid == jid;});
+  if (found != jobs.end()) jobs.erase(found);
+}
+
+JobsList::JobEntry::JobEntry(jobid_t jid, pid_t pid, string cmd_line, time_t start_time, bool is_stopped)
+  : jid(jid), pid(pid), cmd_line(cmd_line), start_time(start_time), is_stopped(is_stopped) {} 
 
 
 KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line)
@@ -387,6 +413,65 @@ void KillCommand::execute()
 
   cout << "signal number " << signum << " was sent to pid " << job->pid << endl;
 }
+
+ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd) 
+  : BuiltInCommand(cmd_line), jobs(jobs), fg_pid(fg_pid), fg_cmd(fg_cmd) {}
+
+void ForegroundCommand::execute() {
+  if (args.size() > 2) {
+    _serror("fg: invalid arguments");
+    return;
+  }
+
+  JobsList::JobEntry* job;
+  jobid_t jid;
+
+  if (args.size() == 1) {
+    if (jobs->size() == 0) {
+      _serror("fg: jobs list is empty");
+      return;
+    }
+    job = jobs->getLastJob(&jid);
+  }
+  else {
+    try {
+      jid = stoi(args[2]);
+    }
+    catch(invalid_argument) {
+      _serror("fg: invalid arguments");
+      return;
+    }
+    job = jobs->getJobById(jid);
+    if (job == nullptr) {
+      _serror("fg: job-id " + args[2] + " does not exist");
+      return;
+    }
+  }
+
+  if (0 != kill(job->pid,SIGCONT)) {
+    _serrorSys("kill");
+    return;
+  }
+
+  *fg_cmd = job->cmd_line;
+  *fg_pid = job->pid;
+  jobs->removeJobById(job->jid);
+  int wstatus;
+  int err = waitpid(job->pid,&wstatus,WUNTRACED);
+  *fg_pid = getpid();
+  *fg_cmd = "";
+  if (err == -1) {
+    _serrorSys("waitpid");
+  }
+}
+
+BackgroundCommand::BackgroundCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs) {
+
+}
+
+void BackgroundCommand::execute() {
+
+}
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
@@ -412,6 +497,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("kill") == 0) {
     return new KillCommand(cmd_line, &(this->jobs));
+  }
+  else if (firstWord.compare("fg") == 0) {
+    return new ForegroundCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
   }
   else {
     return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);

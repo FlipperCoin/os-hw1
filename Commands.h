@@ -39,11 +39,11 @@ class ExternalCommand : public Command {
   private:
     bool isBackgroundCommand;
     pid_t* fg_pid;
-    Command** fg_cmd;
+    string* fg_cmd;
     JobsList* jobs;
     char* createCmdStr();
   public:
-    ExternalCommand(const char* cmd_line, JobsList* jobs,pid_t* fg_pid, Command** fg_cmd);
+    ExternalCommand(const char* cmd_line, JobsList* jobs,pid_t* fg_pid, string* fg_cmd);
     virtual ~ExternalCommand() {}
     void execute() override;
 };
@@ -114,12 +114,11 @@ class JobsList {
     public:
       jobid_t jid;
       pid_t pid;
-      vector<string> args;
       string cmd_line;
       time_t start_time; // in seconds
       bool is_stopped;
 
-      JobEntry(jobid_t jid, pid_t pid, vector<string> args, string cmd_line, time_t start_time, bool is_stopped);
+      JobEntry(jobid_t jid, pid_t pid, string cmd_line, time_t start_time, bool is_stopped);
   };
   private:
     vector<JobEntry> jobs;
@@ -130,7 +129,7 @@ class JobsList {
   public:
     JobsList() = default;
     ~JobsList() = default;
-    void addJob(Command* cmd, pid_t pid, bool isStopped = false);
+    void addJob(string cmd_line, pid_t pid, bool isStopped = false);
     void printJobsList();
     void killAllJobs();
     void removeFinishedJobs();
@@ -138,6 +137,7 @@ class JobsList {
     void removeJobById(jobid_t jobId);
     JobEntry * getLastJob(jobid_t* lastJobId);
     JobEntry *getLastStoppedJob(jobid_t *jobId);
+    int size();
     // jobid_t updateNextJid(); not needed rn
     // TODO: Add extra methods or modify exisitng ones as needed
 };
@@ -164,15 +164,19 @@ class KillCommand : public BuiltInCommand {
 };
 
 class ForegroundCommand : public BuiltInCommand {
- // TODO: Add your data members
+ private:
+  JobsList* jobs;
+  pid_t* fg_pid;
+  string* fg_cmd;
  public:
-  ForegroundCommand(const char* cmd_line, JobsList* jobs);
+  ForegroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd);
   virtual ~ForegroundCommand() {}
   void execute() override;
 };
 
 class BackgroundCommand : public BuiltInCommand {
- // TODO: Add your data members
+ private:
+  JobsList* jobs;
  public:
   BackgroundCommand(const char* cmd_line, JobsList* jobs);
   virtual ~BackgroundCommand() {}
@@ -196,7 +200,7 @@ class SmallShell {
  public:
   JobsList jobs;
   pid_t fg_pid;
-  Command *fg_cmd;
+  string fg_cmd;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
