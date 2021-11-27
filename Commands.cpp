@@ -369,6 +369,13 @@ void JobsList::removeJobById(jobid_t jid) {
   if (found != jobs.end()) jobs.erase(found);
 }
 
+void JobsList::killAllJobs() {
+  cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:" << endl;
+  for (auto job : jobs) {
+    cout << job.pid << ": " << job.cmd_line << endl;
+  }
+}
+
 JobsList::JobEntry::JobEntry(jobid_t jid, pid_t pid, string cmd_line, time_t start_time, bool is_stopped)
   : jid(jid), pid(pid), cmd_line(cmd_line), start_time(start_time), is_stopped(is_stopped) {} 
 
@@ -509,6 +516,17 @@ void BackgroundCommand::execute() {
     return;
   }
 }
+
+QuitCommand::QuitCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs) {}
+
+void QuitCommand::execute() {
+  if (args.size() > 1 && args[1] == "kill") {
+    jobs->killAllJobs();
+  }
+
+  exit(0);
+}
+
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
@@ -540,6 +558,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("bg") == 0) {
     return new BackgroundCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
+  }
+  else if (firstWord.compare("quit") == 0) {
+    return new QuitCommand(cmd_line, &(this->jobs));
   }
   else {
     return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);

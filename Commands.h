@@ -100,6 +100,9 @@ class ChPromptCommand : public BuiltInCommand
 };
 
 class QuitCommand : public BuiltInCommand {
+  private:
+    JobsList* jobs;
+  public:
 // TODO: Add your data members public:
   QuitCommand(const char* cmd_line, JobsList* jobs);
   virtual ~QuitCommand() {}
