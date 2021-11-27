@@ -443,7 +443,7 @@ void ForegroundCommand::execute() {
     }
     job = jobs->getJobById(jid);
     if (job == nullptr) {
-      _serror("fg: job-id " + args[2] + " does not exist");
+      _serror("fg: job-id " + args[1] + " does not exist");
       return;
     }
   }
@@ -465,12 +465,49 @@ void ForegroundCommand::execute() {
   }
 }
 
-BackgroundCommand::BackgroundCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(cmd_line), jobs(jobs) {
-
-}
+BackgroundCommand::BackgroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd) 
+  : BuiltInCommand(cmd_line), jobs(jobs), fg_pid(fg_pid), fg_cmd(fg_cmd) {}
 
 void BackgroundCommand::execute() {
+  if (args.size() > 2) {
+    _serror("bg: invalid arguments");
+    return;
+  }
 
+  JobsList::JobEntry* job;
+  jobid_t jid;
+
+  if (args.size() == 1) {
+    job = jobs->getLastStoppedJob(&jid);
+    if (job == nullptr){
+      _serror("bg: there is no stopped jobs to resume");
+      return;
+    }
+  }
+  else {
+    try {
+      jid = stoi(args[1]);
+    }
+    catch(invalid_argument) {
+      _serror("bg: invalid arguments");
+      return;
+    }
+    job = jobs->getJobById(jid);
+    if (job == nullptr) {
+      _serror("bg: job-id " + args[1] + " does not exist");
+      return;
+    }
+    else if (!job->is_stopped) {
+      _serror("bg: job-id " + args[1] + " is already running in the background");
+      return;
+    }
+  }
+
+  job->is_stopped = false;
+  if (0 != kill(job->pid,SIGCONT)) {
+    _serrorSys("kill");
+    return;
+  }
 }
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
@@ -500,6 +537,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("fg") == 0) {
     return new ForegroundCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
+  }
+  else if (firstWord.compare("bg") == 0) {
+    return new BackgroundCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
   }
   else {
     return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);

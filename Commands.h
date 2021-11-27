@@ -177,8 +177,10 @@ class ForegroundCommand : public BuiltInCommand {
 class BackgroundCommand : public BuiltInCommand {
  private:
   JobsList* jobs;
+  pid_t* fg_pid;
+  string* fg_cmd;
  public:
-  BackgroundCommand(const char* cmd_line, JobsList* jobs);
+  BackgroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd);
   virtual ~BackgroundCommand() {}
   void execute() override;
 };
