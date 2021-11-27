@@ -589,6 +589,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
+  jobs.clearZombieJobs();
   string cmd_s = string(cmd_line);
   size_t pipe_index_s = cmd_s.find_first_of(">|");
 

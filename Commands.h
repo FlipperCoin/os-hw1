@@ -127,9 +127,9 @@ class JobsList {
     vector<JobEntry> jobs;
     jobid_t next_jid;
     void printJobEntry(JobEntry& job);
-    void clearZombieJobs();
   // TODO: Add your data members
   public:
+    void clearZombieJobs();
     JobsList() = default;
     ~JobsList() = default;
     void addJob(string cmd_line, pid_t pid, jobid_t jid = 0, bool isStopped = false);
