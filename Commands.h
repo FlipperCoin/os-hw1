@@ -132,7 +132,7 @@ class JobsList {
   public:
     JobsList() = default;
     ~JobsList() = default;
-    void addJob(string cmd_line, pid_t pid, bool isStopped = false);
+    void addJob(string cmd_line, pid_t pid, jobid_t jid = 0, bool isStopped = false);
     void printJobsList();
     void killAllJobs();
     void removeFinishedJobs();
@@ -171,9 +171,10 @@ class ForegroundCommand : public BuiltInCommand {
  private:
   JobsList* jobs;
   pid_t* fg_pid;
+  jobid_t* fg_jid;
   string* fg_cmd;
  public:
-  ForegroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd);
+  ForegroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd);
   virtual ~ForegroundCommand() {}
   void execute() override;
 };
@@ -206,6 +207,7 @@ class SmallShell {
  public:
   JobsList jobs;
   pid_t fg_pid;
+  jobid_t fg_jid;
   string fg_cmd;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor

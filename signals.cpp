@@ -15,7 +15,7 @@ void ctrlZHandler(int sig_num) {
     {
       _serrorSys("kill");
     }
-    smash.jobs.addJob(smash.fg_cmd, smash.fg_pid, true);
+    smash.jobs.addJob(smash.fg_cmd, smash.fg_pid,smash.fg_jid, true);
   }
 }
 
