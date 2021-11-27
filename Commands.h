@@ -138,8 +138,9 @@ class JobsList {
     void removeFinishedJobs();
     JobEntry * getJobById(jobid_t jobId);
     void removeJobById(jobid_t jobId);
+    JobEntry * getJobByPid(pid_t jobPid);
     JobEntry * getLastJob(jobid_t* lastJobId);
-    JobEntry *getLastStoppedJob(jobid_t *jobId);
+    JobEntry * getLastStoppedJob(jobid_t *jobId);
     int size();
     // jobid_t updateNextJid(); not needed rn
     // TODO: Add extra methods or modify exisitng ones as needed

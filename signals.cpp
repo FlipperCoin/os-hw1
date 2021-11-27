@@ -32,7 +32,27 @@ void ctrlCHandler(int sig_num) {
   }
 }
 
-void alarmHandler(int sig_num) {
-  // TODO: Add your implementation
+void alarmHandler(int sig_num, siginfo_t* info, void *ucontext) {
+  SmallShell& smash = SmallShell::getInstance();
+  cout << "smash got an alarm" << endl;
+  
+  pid_t pid = info->si_pid;
+  string cmd_line;
+  auto job = smash.jobs.getJobByPid(pid);
+  if (nullptr != job) {
+    cmd_line = job->cmd_line;
+    smash.jobs.removeJobById(job->jid);
+  }
+  else if (smash.fg_pid == pid) {
+    cmd_line = smash.fg_cmd;
+  }
+  else {
+    return;
+  }
+
+  cout << "smash: " << cmd_line << " timed out!" << endl;
+  if (0 != kill(pid, SIGKILL)) {
+    _serrorSys("kill");
+  }
 }
 

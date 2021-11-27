@@ -360,6 +360,16 @@ JobsList::JobEntry* JobsList::getLastStoppedJob(jobid_t* jobId) {
   return nullptr;
 }
 
+JobsList::JobEntry* JobsList::getJobByPid(pid_t jobPid) {
+  for (size_t i = 0; i < jobs.size(); i++) {
+    if (jobs[i].pid == jobPid) {
+      return &jobs[i];
+    }
+  }
+
+  return nullptr;
+}
+
 int JobsList::size() {
   return jobs.size();
 }
