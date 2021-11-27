@@ -698,7 +698,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
     close(1);
     dup(file);
     char *cmd_line_noamp = new char[cmd_s.length()+1];
-    strcpy(cmd_line_noamp, cmd_s.substr(0,pipe_index_s-1).c_str());
+    strcpy(cmd_line_noamp, cmd_s.substr(0,pipe_index_s).c_str());
     _removeBackgroundSign(cmd_line_noamp);
     cmd1 = CreateCommand(cmd_line_noamp);
     if (cmd1)
