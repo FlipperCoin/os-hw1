@@ -286,21 +286,22 @@ void JobsList::printJobEntry(JobEntry& job) {
 
 void JobsList::printJobsList() {
   clearZombieJobs();
+  sort(jobs.begin(),jobs.end(),[](JobEntry const& j1,JobEntry const& j2){return j1.jid < j2.jid;});
   for (JobEntry& job : jobs) {
     printJobEntry(job);
   }
 }
 
 
-void JobsList::addJob(string cmd_line, pid_t pid, bool isStopped) {
+void JobsList::addJob(string cmd_line, pid_t pid, jobid_t jid , bool isStopped) {
   clearZombieJobs();
 
   //int max_jid = !jobs.empty() ? jobs.end()->jid : 0; //this doesnt work correctly for some reason!?
-  if(!jobs.empty())
+  if(!jobs.empty() && jid == 0)
   {
     next_jid++; // used inernal max counter.
   }
-  else
+  else if(jid == 0)
   {
     next_jid = 1; // reset inernal max counter when list is empty.
   }
@@ -312,8 +313,15 @@ void JobsList::addJob(string cmd_line, pid_t pid, bool isStopped) {
     // TODO: ignore? fail?
   }
 
-  JobEntry job(next_jid,pid,cmd_line,now,isStopped);
-  jobs.push_back(job);
+  if(jid != 0)
+  {
+    jobs.push_back(JobEntry(jid,pid,cmd_line,now,isStopped));
+  }
+  else
+  {
+    jobs.push_back(JobEntry(next_jid,pid,cmd_line,now,isStopped));
+  }
+  
 }
 
 void JobsList::clearZombieJobs() {
@@ -382,7 +390,7 @@ KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : BuiltInCommand(
     this->jid = stoi(this->args[2]);
     this->signum = stoi(args[1]);
   }
-  catch(invalid_argument) {}
+  catch(invalid_argument& arg) {}
 }
 
 void KillCommand::execute()
@@ -414,8 +422,8 @@ void KillCommand::execute()
   cout << "signal number " << signum << " was sent to pid " << job->pid << endl;
 }
 
-ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd) 
-  : BuiltInCommand(cmd_line), jobs(jobs), fg_pid(fg_pid), fg_cmd(fg_cmd) {}
+ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd) 
+  : BuiltInCommand(cmd_line), jobs(jobs), fg_pid(fg_pid), fg_jid(fg_jid), fg_cmd(fg_cmd) {}
 
 void ForegroundCommand::execute() {
   if (args.size() > 2) {
@@ -437,7 +445,7 @@ void ForegroundCommand::execute() {
     try {
       jid = stoi(args[1]);
     }
-    catch(invalid_argument) {
+    catch(invalid_argument& arg) {
       _serror("fg: invalid arguments");
       return;
     }
@@ -455,6 +463,7 @@ void ForegroundCommand::execute() {
 
   *fg_cmd = job->cmd_line;
   *fg_pid = job->pid;
+  *fg_jid = job->jid;
   jobs->removeJobById(job->jid);
   int wstatus;
   int err = waitpid(*fg_pid,&wstatus,WUNTRACED);
@@ -488,7 +497,7 @@ void BackgroundCommand::execute() {
     try {
       jid = stoi(args[1]);
     }
-    catch(invalid_argument) {
+    catch(invalid_argument& arg) {
       _serror("bg: invalid arguments");
       return;
     }
@@ -536,7 +545,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new KillCommand(cmd_line, &(this->jobs));
   }
   else if (firstWord.compare("fg") == 0) {
-    return new ForegroundCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
+    return new ForegroundCommand(cmd_line, &(this->jobs), &fg_pid, &fg_jid, &fg_cmd);
   }
   else if (firstWord.compare("bg") == 0) {
     return new BackgroundCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
