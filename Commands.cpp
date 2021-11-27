@@ -435,7 +435,7 @@ void ForegroundCommand::execute() {
   }
   else {
     try {
-      jid = stoi(args[2]);
+      jid = stoi(args[1]);
     }
     catch(invalid_argument) {
       _serror("fg: invalid arguments");
@@ -457,7 +457,7 @@ void ForegroundCommand::execute() {
   *fg_pid = job->pid;
   jobs->removeJobById(job->jid);
   int wstatus;
-  int err = waitpid(job->pid,&wstatus,WUNTRACED);
+  int err = waitpid(*fg_pid,&wstatus,WUNTRACED);
   *fg_pid = getpid();
   *fg_cmd = "";
   if (err == -1) {
