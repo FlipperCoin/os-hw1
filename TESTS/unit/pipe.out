@@ -1,0 +1,16 @@
+smash> smash error: head: invalid arguments
+smash> look here
+smash> /bin/bash: not_real_command: command not found
+smash> smash> smash> smash> smash> my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+test_in
+test_in2
+smash> 0
+2
+4
+smash: got ctrl-Z
+smash: process 27973 was stopped

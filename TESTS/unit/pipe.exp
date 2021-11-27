@@ -1,0 +1,41 @@
+smash> my_sleep
+random1.txt
+ransmash> look here
+smash> bash: not_real_command: command not found
+smash> smash> smash> smash> smash> my_sleep
+random1.txt
+random2.txt
+sub1
+sub2
+sub3
+test_in
+test_in2
+smash> 0
+2
+4
+smash: got ctrl-Z
+6
+Done: 8
+smash> 0
+2
+4
+6
+Done: 8
+smash> smash pid issmash> /tmp/smash_tsmash> smash> smash> signal number 9 was sent to pid \d+
+smash> smash error: kill: job-id 2 does not exist
+smash> smash error: kill: job-id 3 does not exist
+smash> smash error: kill: job-id 4 does not exist
+smash> smash error: kill: job-id 5 does not exist
+smash> smash error: kill: job-id 6 does not exist
+smash> r directory
+smash> r directory
+smash> PWD not set
+smash> y arguments
+smash> s not exist
+smash> d arguments
+smash> d arguments
+smash> d not found
+smash> smash> st is empty
+smash> s not exist
+smash> d arguments
+smash> smash: sending SIGKILL signal to 0 jobs:
