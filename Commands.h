@@ -8,6 +8,7 @@
 #define DEFAULT_PROMPT "smash"
 
 const std::string WHITESPACE = " \n\r\t\f\v";
+typedef int jobid_t;
 
 using namespace std;
 
@@ -38,12 +39,13 @@ class JobsList;
 class ExternalCommand : public Command {
   private:
     bool isBackgroundCommand;
-    pid_t* fg_pid;
-    string* fg_cmd;
     JobsList* jobs;
+    pid_t* fg_pid;
+    jobid_t* fg_jid;
+    string* fg_cmd;
     char* createCmdStr();
   public:
-    ExternalCommand(const char* cmd_line, JobsList* jobs,pid_t* fg_pid, string* fg_cmd);
+    ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd);
     virtual ~ExternalCommand() {}
     void execute() override;
 };
@@ -109,8 +111,6 @@ class QuitCommand : public BuiltInCommand {
   void execute() override;
 };
 
-typedef unsigned int jobid_t;
-
 class JobsList {
  public:
   class JobEntry {
@@ -125,7 +125,7 @@ class JobsList {
   };
   private:
     vector<JobEntry> jobs;
-    jobid_t next_jid;
+    //jobid_t next_jid;
     void printJobEntry(JobEntry& job);
   // TODO: Add your data members
   public:

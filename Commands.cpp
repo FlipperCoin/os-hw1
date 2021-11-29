@@ -79,6 +79,23 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
+string _removeBackgroundSignStr(string str) {
+  // find last character other than spaces
+  unsigned int idx = str.find_last_not_of(WHITESPACE);
+  // if all characters are spaces then return
+  if (idx == string::npos) {
+    return str;
+  }
+  // if the command line does not end with & then return
+  if (str[idx] != '&') {
+    return str;
+  }
+  // replace the & (background sign) with space and then remove all tailing spaces.
+  str[idx] = ' ';
+  // truncate the command line string up to the last non-space character
+  return _rtrim(str);
+}
+
 void _serror(string error) {
   cerr << ("smash error: " + error).c_str() << endl;
 }
@@ -193,11 +210,9 @@ void JobsCommand::execute() {
   jobs->printJobsList();
 }
 
-ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd) : Command(cmd_line), fg_pid(fg_pid), fg_cmd(fg_cmd)
-{
-  this->jobs = jobs;
-  this->isBackgroundCommand = _isBackgroundCommand(cmd_line);
-}
+ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd) 
+  : Command(cmd_line), isBackgroundCommand(_isBackgroundCommand(cmd_line)), jobs(jobs), fg_pid(fg_pid), fg_jid(fg_jid), fg_cmd(fg_cmd)
+{}
 
 char* ExternalCommand::createCmdStr() {
   char *cmd_line_noamp = new char[cmd_line.length()+1];
@@ -219,7 +234,7 @@ void ExternalCommand::execute() {
       exit(1);
     }
     char *cmd_str = createCmdStr();
-    execl("/bin/bash","/bin/bash","-c",cmd_str,nullptr);
+    execl("/bin/bash","bash","-c",cmd_str,nullptr);
     _serrorSys("execv");
     delete cmd_str;
   }
@@ -230,16 +245,12 @@ void ExternalCommand::execute() {
   } else {
     *fg_pid = pid;
     *fg_cmd = this->cmd_line;
+    *fg_jid = 0;
     int err = waitpid(pid, &wstatus, WUNTRACED);
     *fg_pid = getpid();
     if (-1 == err) {
       _serrorSys("waitpid");
     }
-    // TODO: should print "smash: process <foreground-PID> was stopped"?
-    // or should it be in shell's SIGSTP handler (after sending the stop signal)?
-    // if (WIFSTOPPED(wstatus)) {
-    //   ...
-    // }
   }
 }
 
@@ -271,7 +282,7 @@ void JobsList::printJobEntry(JobEntry& job) {
   cout << "[" << job.jid << "] ";
   // TODO: should we print the orig cmd as it was typed
   cout << job.cmd_line;
-  cout << ": ";
+  cout << " : ";
   time_t now = time(nullptr);
   if ((time_t)-1 == now) {
     _serrorSys("time");
@@ -296,14 +307,14 @@ void JobsList::printJobsList() {
 void JobsList::addJob(string cmd_line, pid_t pid, jobid_t jid , bool isStopped) {
   clearZombieJobs();
 
-  //int max_jid = !jobs.empty() ? jobs.end()->jid : 0; //this doesnt work correctly for some reason!?
+  int max_jid;
   if(!jobs.empty() && jid == 0)
   {
-    next_jid++; // used inernal max counter.
+    max_jid = ((jobs.end()-1)->jid) + 1;
   }
   else if(jid == 0)
   {
-    next_jid = 1; // reset inernal max counter when list is empty.
+    max_jid = 1;
   }
   
 
@@ -319,7 +330,7 @@ void JobsList::addJob(string cmd_line, pid_t pid, jobid_t jid , bool isStopped) 
   }
   else
   {
-    jobs.push_back(JobEntry(next_jid,pid,cmd_line,now,isStopped));
+    jobs.push_back(JobEntry(max_jid,pid,cmd_line,now,isStopped));
   }
   
 }
@@ -426,7 +437,7 @@ void KillCommand::execute()
   
   if(!job)
   {
-    _serror("kill: job-id <job-id> does not exist");
+    _serror("kill: job-id " + to_string(jid) + " does not exist");
     return;
   }
 
@@ -473,15 +484,16 @@ void ForegroundCommand::execute() {
     }
   }
 
-  if (0 != kill(job->pid,SIGCONT)) {
+  *fg_cmd = job->cmd_line;
+  *fg_pid = job->pid;
+  *fg_jid = job->jid;
+  cout << job->cmd_line << " : " << job->pid << endl;
+  jobs->removeJobById(job->jid);
+  if (0 != kill(*fg_pid,SIGCONT)) {
     _serrorSys("kill");
     return;
   }
 
-  *fg_cmd = job->cmd_line;
-  *fg_pid = job->pid;
-  *fg_jid = job->jid;
-  jobs->removeJobById(job->jid);
   int wstatus;
   int err = waitpid(*fg_pid,&wstatus,WUNTRACED);
   *fg_pid = getpid();
@@ -528,8 +540,9 @@ void BackgroundCommand::execute() {
       return;
     }
   }
-
+  
   job->is_stopped = false;
+  cout << job->cmd_line << " : " << job->pid << endl;
   if (0 != kill(job->pid,SIGCONT)) {
     _serrorSys("kill");
     return;
@@ -614,6 +627,7 @@ void HeadCommand::execute() {
 Command * SmallShell::CreateCommand(const char* cmd_line) {
   string cmd_s = _trim(string(cmd_line));
   string firstWord = cmd_s.substr(0, cmd_s.find_first_of(WHITESPACE));
+  firstWord = _removeBackgroundSignStr(firstWord);
 
   if (firstWord.compare("pwd") == 0) {
     return new GetCurrDirCommand(cmd_line);
@@ -647,7 +661,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new HeadCommand(cmd_line);
   }
   else {
-    return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
+    return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_jid, &fg_cmd);
   }
   
   return nullptr;
@@ -680,18 +694,21 @@ void SmallShell::executeCommand(const char *cmd_line) {
     int file;
     if(cmd_s.substr(pipe_index_s,2) == ">>")
     {
-      file = open(cmd_s.substr(pipe_index_s+2,cmd_s.size()-pipe_index_s+2).c_str(),O_CREAT|O_WRONLY|O_APPEND,0644);
-      //CHECK MODE NUMBERS
+      file = open(_removeBackgroundSignStr(_trim(cmd_s.substr(pipe_index_s+2,cmd_s.size()-pipe_index_s+2))).c_str()
+                  ,O_CREAT|O_WRONLY|O_APPEND,0644);
     }
     else
     {
-      file = open(cmd_s.substr(pipe_index_s+1,cmd_s.size()-pipe_index_s+1).c_str(),O_CREAT|O_WRONLY|O_TRUNC,0644);
-      //CHECK MODE NUMBERS
+      file = open(_removeBackgroundSignStr(_trim(cmd_s.substr(pipe_index_s+1,cmd_s.size()-pipe_index_s+1))).c_str()
+                  ,O_CREAT|O_WRONLY|O_TRUNC,0644);
     }
     
     if(file == -1)
     {
       _serrorSys("open");
+      close(stdin_copy);
+      close(stdout_copy);
+      close(stderr_copy);
       return;    
     }
     
@@ -708,7 +725,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
     }
     delete cmd_line_noamp;
     dup2(stdout_copy,1);
-    close(file);    
+    close(file);
   }
   else if(cmd_s.substr(pipe_index_s,1) == "|")
   {
@@ -718,12 +735,19 @@ void SmallShell::executeCommand(const char *cmd_line) {
     if (son < 0)
     {
       _serrorSys("fork");
+      close(stdin_copy);
+      close(stdout_copy);
+      close(stderr_copy);
+      return;
     }
     
     if(son == 0) // son to execute cmd2.
     {
       if (-1 == setpgrp()) {
         _serrorSys("setgrp");
+        close(stdin_copy);
+        close(stdout_copy);
+        close(stderr_copy);
         exit(1);
       }
       close(0);
@@ -749,6 +773,9 @@ void SmallShell::executeCommand(const char *cmd_line) {
       delete cmd2_line_noamp;
       dup2(stdin_copy,0);
       close(cmd_pipe[0]);
+      close(stdin_copy);
+      close(stdout_copy);
+      close(stderr_copy);
       exit(0);
     }
     else
@@ -787,5 +814,8 @@ void SmallShell::executeCommand(const char *cmd_line) {
     waitpid(son,NULL,0);
   }
 
+  close(stdin_copy);
+  close(stdout_copy);
+  close(stderr_copy);
   //Please note that you must fork smash process for some commands (e.g., external commands....)
 }
