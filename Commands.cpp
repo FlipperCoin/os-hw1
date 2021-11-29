@@ -193,11 +193,7 @@ void JobsCommand::execute() {
   jobs->printJobsList();
 }
 
-ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, string* fg_cmd) : Command(cmd_line), fg_pid(fg_pid), fg_cmd(fg_cmd)
-{
-  this->jobs = jobs;
-  this->isBackgroundCommand = _isBackgroundCommand(cmd_line);
-}
+ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {}
 
 char* ExternalCommand::createCmdStr() {
   char *cmd_line_noamp = new char[cmd_line.length()+1];
@@ -207,40 +203,10 @@ char* ExternalCommand::createCmdStr() {
 }
 
 void ExternalCommand::execute() {
-  pid_t pid = fork();
-  if (-1 == pid) {
-    _serrorSys("fork");
-    return;
-  }
-
-  if (pid == 0) {
-    if (-1 == setpgrp()) {
-      _serrorSys("setgrp");
-      exit(1);
-    }
-    char *cmd_str = createCmdStr();
-    execl("/bin/bash","/bin/bash","-c",cmd_str,nullptr);
-    _serrorSys("execv");
-    delete cmd_str;
-  }
-  
-  int wstatus;
-  if (this->isBackgroundCommand) {
-    this->jobs->addJob(this->cmd_line, pid);
-  } else {
-    *fg_pid = pid;
-    *fg_cmd = this->cmd_line;
-    int err = waitpid(pid, &wstatus, WUNTRACED);
-    *fg_pid = getpid();
-    if (-1 == err) {
-      _serrorSys("waitpid");
-    }
-    // TODO: should print "smash: process <foreground-PID> was stopped"?
-    // or should it be in shell's SIGSTP handler (after sending the stop signal)?
-    // if (WIFSTOPPED(wstatus)) {
-    //   ...
-    // }
-  }
+  char *cmd_str = createCmdStr();
+  execl("/bin/bash","/bin/bash","-c",cmd_str,nullptr);
+  _serrorSys("execv");
+  delete cmd_str;
 }
 
 void SmallShell::setName(string prompt_name)
@@ -653,26 +619,56 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new HeadCommand(cmd_line);
   }
   else {
-    return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_cmd);
+    return new ExternalCommand(cmd_line);
   }
   
   return nullptr;
 }
 
-void SmallShell::executeCommand(const char *cmd_line) {
-  jobs.clearZombieJobs();
-  string cmd_s = string(cmd_line);
-  size_t pipe_index_s = cmd_s.find_first_of(">|");
-
-  if (pipe_index_s == string::npos) {
-    Command* cmd = CreateCommand(cmd_line);
-    if (cmd) {
-      cmd->execute();
-      delete cmd;
-    }
+void SmallShell::singleCommand(const char *cmd_line) {
+  Command* cmd = CreateCommand(cmd_line);
+  if (!cmd) {
     return;
   }
 
+  ExternalCommand* ext_cmd = dynamic_cast<ExternalCommand*>(cmd);
+  if (ext_cmd == nullptr) {
+    cmd->execute();
+    delete cmd;
+    return;
+  }
+  
+  pid_t pid = fork();
+  if (-1 == pid) {
+    _serrorSys("fork");
+    return;
+  }
+
+  if (pid == 0) {
+    if (-1 == setpgrp()) {
+      _serrorSys("setgrp");
+      exit(1);
+    }
+    cmd->execute();
+  }
+
+  if (_isBackgroundCommand(cmd_line)) {
+    jobs.addJob(cmd_line, pid);
+  } else {
+    fg_pid = pid;
+    fg_cmd = cmd_line;
+    
+    int wstatus;
+    int err = waitpid(pid, &wstatus, WUNTRACED);
+    
+    fg_pid = getpid();
+    if (-1 == err) {
+      _serrorSys("waitpid");
+    }
+  }
+}
+
+void SmallShell::doubleCommand(const char *cmd_line, string cmd_s, size_t pipe_index_s) {
   // TODO: fix & striping.
   Command* cmd1 = nullptr;
   Command* cmd2 = nullptr;
@@ -792,6 +788,20 @@ void SmallShell::executeCommand(const char *cmd_line) {
     }
     waitpid(son,NULL,0);
   }
+}
+
+
+void SmallShell::executeCommand(const char *cmd_line) {
+  jobs.clearZombieJobs();
+  string cmd_s = string(cmd_line);
+  size_t pipe_index_s = cmd_s.find_first_of(">|");
+
+  if (pipe_index_s == string::npos) {
+    singleCommand(cmd_line);
+    return;
+  }
+
+  doubleCommand(cmd_line,cmd_s,pipe_index_s);
 
   //Please note that you must fork smash process for some commands (e.g., external commands....)
 }
