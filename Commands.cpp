@@ -298,6 +298,7 @@ void JobsList::printJobEntry(JobEntry& job) {
   if (job.is_stopped) {
     cout << " (stopped)";
   }
+  
   cout << endl;
 }
 
@@ -730,6 +731,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
       delete cmd1;
     }
     delete cmd_line_noamp;
+    cout.flush();
     dup2(stdout_copy,1);
     close(file);
   }
@@ -806,6 +808,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
         delete cmd1;
       }
       delete cmd1_line_noamp;
+      cout.flush();
       close(cmd_pipe[1]);
 
       if (cmd_s.substr(pipe_index_s,2) == "|&")

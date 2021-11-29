@@ -8,24 +8,24 @@ smash> smash> test_redirect
 smash> smash> again_redirect
 smash> smash> again_redirect
 test_redirect
-smash> smash> smash pid is 45027
-smash> smash> smash pid is 45027
-smash pid is 45027
-smash> smash> smash pid is 45027
-smash> mypid
-my_sleep
+smash> smash> smash pid is 24252
+smash> smash> smash pid is 24252
+smash pid is 24252
+smash> smash> smash pid is 24252
+smash> my_sleep
+mypid
 new
 random1.txt
 random2.txt
 sub1
 sub2
 sub3
-smash> smash> smash> [1] sleep 100& : 45054 1 secs
+smash> smash> smash> [1] sleep 100& : 24272 0 secs
 smash> smash error: kill: invalid arguments
 smash> smash> smash error: kill: invalid arguments
 smash> smash> k
-mypid
 my_sleep
+mypid
 new
 random1.txt
 random2.txt
@@ -35,8 +35,8 @@ sub2
 sub3
 t
 smash> smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -47,8 +47,8 @@ sub2
 sub3
 t
 smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -65,8 +65,8 @@ smash> again_redirect
 test_redirect
 smash> smash> smash error: open failed: Permission denied
 smash> smash> k
-mypid
 my_sleep
+mypid
 p
 random1.txt
 random2.txt
@@ -76,8 +76,8 @@ sub2
 sub3
 t
 smash> smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -88,8 +88,8 @@ sub2
 sub3
 t
 smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -100,8 +100,8 @@ sub2
 sub3
 t
 smash> smash> smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -112,8 +112,8 @@ sub2
 sub3
 t
 smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -124,8 +124,8 @@ sub2
 sub3
 t
 smash> smash> smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -136,8 +136,8 @@ sub2
 sub3
 t
 smash> smash> smash> k
-mypid
 my_sleep
+mypid
 new
 p
 random1.txt
@@ -153,4 +153,4 @@ smash> smash> 0
 4
 Done: 6
 smash> smash: sending SIGKILL signal to 1 jobs:
-45054: sleep 100&
+24272: sleep 100&
