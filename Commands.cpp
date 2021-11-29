@@ -81,7 +81,7 @@ void _removeBackgroundSign(char* cmd_line) {
 
 string _removeBackgroundSignStr(string str) {
   // find last character other than spaces
-  unsigned int idx = str.find_last_not_of(WHITESPACE);
+  size_t idx = str.find_last_not_of(WHITESPACE);
   // if all characters are spaces then return
   if (idx == string::npos) {
     return str;
@@ -210,9 +210,7 @@ void JobsCommand::execute() {
   jobs->printJobsList();
 }
 
-ExternalCommand::ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd) 
-  : Command(cmd_line), isBackgroundCommand(_isBackgroundCommand(cmd_line)), jobs(jobs), fg_pid(fg_pid), fg_jid(fg_jid), fg_cmd(fg_cmd)
-{}
+ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {}
 
 char* ExternalCommand::createCmdStr() {
   char *cmd_line_noamp = new char[cmd_line.length()+1];
@@ -222,36 +220,10 @@ char* ExternalCommand::createCmdStr() {
 }
 
 void ExternalCommand::execute() {
-  pid_t pid = fork();
-  if (-1 == pid) {
-    _serrorSys("fork");
-    return;
-  }
-
-  if (pid == 0) {
-    if (-1 == setpgrp()) {
-      _serrorSys("setgrp");
-      exit(1);
-    }
-    char *cmd_str = createCmdStr();
-    execl("/bin/bash","bash","-c",cmd_str,nullptr);
-    _serrorSys("execv");
-    delete cmd_str;
-  }
-  
-  int wstatus;
-  if (this->isBackgroundCommand) {
-    this->jobs->addJob(this->cmd_line, pid);
-  } else {
-    *fg_pid = pid;
-    *fg_cmd = this->cmd_line;
-    *fg_jid = 0;
-    int err = waitpid(pid, &wstatus, WUNTRACED);
-    *fg_pid = getpid();
-    if (-1 == err) {
-      _serrorSys("waitpid");
-    }
-  }
+  char *cmd_str = createCmdStr();
+  execl("/bin/bash","/bin/bash","-c",cmd_str,nullptr);
+  _serrorSys("execv");
+  delete cmd_str;
 }
 
 void SmallShell::setName(string prompt_name)
@@ -291,7 +263,7 @@ void JobsList::printJobEntry(JobEntry& job) {
   cout << job.pid << " " << difftime(now, job.start_time) << " secs";
 
   int wstatus;
-  if (-1 != waitpid(job.pid,&wstatus, WNOHANG|WUNTRACED)) {
+  if (-1 != waitpid(job.pid,&wstatus, WNOHANG|WUNTRACED|WCONTINUED)) {
     job.is_stopped = (job.is_stopped && !WIFCONTINUED(wstatus)) || WIFSTOPPED(wstatus);
   }
 
@@ -667,26 +639,56 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new HeadCommand(cmd_line);
   }
   else {
-    return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_jid, &fg_cmd);
+    return new ExternalCommand(cmd_line);
   }
   
   return nullptr;
 }
 
-void SmallShell::executeCommand(const char *cmd_line) {
-  jobs.clearZombieJobs();
-  string cmd_s = string(cmd_line);
-  size_t pipe_index_s = cmd_s.find_first_of(">|");
-
-  if (pipe_index_s == string::npos) {
-    Command* cmd = CreateCommand(cmd_line);
-    if (cmd) {
-      cmd->execute();
-      delete cmd;
-    }
+void SmallShell::singleCommand(const char *cmd_line) {
+  Command* cmd = CreateCommand(cmd_line);
+  if (!cmd) {
     return;
   }
 
+  ExternalCommand* ext_cmd = dynamic_cast<ExternalCommand*>(cmd);
+  if (ext_cmd == nullptr) {
+    cmd->execute();
+    delete cmd;
+    return;
+  }
+  
+  pid_t pid = fork();
+  if (-1 == pid) {
+    _serrorSys("fork");
+    return;
+  }
+
+  if (pid == 0) {
+    if (-1 == setpgrp()) {
+      _serrorSys("setgrp");
+      exit(1);
+    }
+    cmd->execute();
+  }
+
+  if (_isBackgroundCommand(cmd_line)) {
+    jobs.addJob(cmd_line, pid);
+  } else {
+    fg_pid = pid;
+    fg_cmd = cmd_line;
+    
+    int wstatus;
+    int err = waitpid(pid, &wstatus, WUNTRACED);
+    
+    fg_pid = getpid();
+    if (-1 == err) {
+      _serrorSys("waitpid");
+    }
+  }
+}
+
+void SmallShell::doubleCommand(const char *cmd_line, string cmd_s, size_t pipe_index_s) {
   // TODO: fix & striping.
   Command* cmd1 = nullptr;
   Command* cmd2 = nullptr;
@@ -724,10 +726,31 @@ void SmallShell::executeCommand(const char *cmd_line) {
     strcpy(cmd_line_noamp, cmd_s.substr(0,pipe_index_s).c_str());
     _removeBackgroundSign(cmd_line_noamp);
     cmd1 = CreateCommand(cmd_line_noamp);
-    if (cmd1)
-    {
+    if (dynamic_cast<ExternalCommand*>(cmd1) == nullptr) {
       cmd1->execute();
       delete cmd1;
+    }
+    else {
+      pid_t pid = fork();
+      if (-1 == pid) {
+        _serrorSys("fork");
+        delete cmd1;
+        return;
+      }
+
+      if (pid == 0) {
+        if (-1 == setpgrp()) {
+          _serrorSys("setgrp");
+          exit(1);
+        }
+        cmd1->execute();
+      }
+
+      int wstatus;
+      int err = waitpid(pid, &wstatus, WUNTRACED);
+      if (-1 == err) {
+        _serrorSys("waitpid");
+      }
     }
     delete cmd_line_noamp;
     dup2(stdout_copy,1);
@@ -800,10 +823,31 @@ void SmallShell::executeCommand(const char *cmd_line) {
       strcpy(cmd1_line_noamp, cmd_s.substr(0,pipe_index_s-1).c_str());
       _removeBackgroundSign(cmd1_line_noamp);
       cmd1 = CreateCommand(cmd1_line_noamp);
-      if (cmd1)
-      {
+      if (dynamic_cast<ExternalCommand*>(cmd1) == nullptr) {
         cmd1->execute();
         delete cmd1;
+      }
+      else {
+        pid_t pid = fork();
+        if (-1 == pid) {
+          _serrorSys("fork");
+          delete cmd1;
+          return;
+        }
+
+        if (pid == 0) {
+          if (-1 == setpgrp()) {
+            _serrorSys("setgrp");
+            exit(1);
+          }
+          cmd1->execute();
+        }
+
+        int wstatus;
+        int err = waitpid(pid, &wstatus, WUNTRACED);
+        if (-1 == err) {
+          _serrorSys("waitpid");
+        }
       }
       delete cmd1_line_noamp;
       close(cmd_pipe[1]);
@@ -823,5 +867,19 @@ void SmallShell::executeCommand(const char *cmd_line) {
   close(stdin_copy);
   close(stdout_copy);
   close(stderr_copy);
+}
+
+
+void SmallShell::executeCommand(const char *cmd_line) {
+  jobs.clearZombieJobs();
+  string cmd_s = string(cmd_line);
+  size_t pipe_index_s = cmd_s.find_first_of(">|");
+
+  if (pipe_index_s == string::npos) {
+    singleCommand(cmd_line);
+    return;
+  }
+
+  doubleCommand(cmd_line,cmd_s,pipe_index_s);
   //Please note that you must fork smash process for some commands (e.g., external commands....)
 }

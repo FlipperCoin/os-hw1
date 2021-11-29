@@ -38,14 +38,9 @@ class BuiltInCommand : public Command {
 class JobsList;
 class ExternalCommand : public Command {
   private:
-    bool isBackgroundCommand;
-    JobsList* jobs;
-    pid_t* fg_pid;
-    jobid_t* fg_jid;
-    string* fg_cmd;
     char* createCmdStr();
   public:
-    ExternalCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd);
+    ExternalCommand(const char* cmd_line);
     virtual ~ExternalCommand() {}
     void execute() override;
 };
@@ -220,6 +215,8 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
+  void singleCommand(const char* cmd_line);
+  void doubleCommand(const char *cmd_line, string cmd_s, size_t pipe_index_s);
   string getName();
   void setName(string prompt_name);
   // TODO: add extra methods as needed
