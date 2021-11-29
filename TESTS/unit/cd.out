@@ -11,8 +11,6 @@ random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
 smash> smash> /tmp/smash_test/dir1/dir2
 smash> dir3
 smash> smash> /tmp/smash_test
@@ -23,8 +21,6 @@ random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
 smash> smash> smash> /tmp/smash_test/dir1/dir2/dir3
 smash> smash> /tmp/smash_test/dir1/dir2
 smash> smash> dir2

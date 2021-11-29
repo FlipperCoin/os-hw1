@@ -1,0 +1,13 @@
+sleep 100&
+sleep 200&
+showpid > mypid
+jobs > myjobs
+pwd > mypwd
+cat mypid
+cat myjobs
+cat mypwd
+showpid | showpid
+jobs | jobs
+pwd | pwd
+jobs | showpid
+quit kill

@@ -4,131 +4,153 @@ random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
-smash> smash> cat: new: No such file or directory
-smash> smash> cat: new: No such file or directory
-smash> smash> cat: new: No such file or directory
-smash> smash pid is 12136
-smash> cat: mypid: No such file or directory
-smash> smash pid is 12136
-smash> cat: mypid: No such file or directory
-smash> smash pid is 12136
-smash> cat: mypid: No such file or directory
-smash>  mypid
- new
+smash> smash> test_redirect
+smash> smash> again_redirect
+smash> smash> again_redirect
+test_redirect
+smash> smash> smash pid is 45027
+smash> smash> smash pid is 45027
+smash pid is 45027
+smash> smash> smash pid is 45027
+smash> mypid
 my_sleep
+new
 random1.txt
 random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
-smash> smash> smash> cat: s: No such file or directory
+smash> smash> smash> [1] sleep 100& : 45054 1 secs
 smash> smash error: kill: invalid arguments
-smash> cat: k: No such file or directory
-smash> smash error: kill: invalid arguments
-smash> cat: t: No such file or directory
-smash>  k
- mypid
- new
- s
- t
+smash> smash> smash error: kill: invalid arguments
+smash> smash> k
+mypid
 my_sleep
+new
 random1.txt
 random2.txt
+s
 sub1
 sub2
 sub3
-test_in
-test_in2
-smash> smash> cat: p: No such file or directory
-smash>  k
- mypid
- new
- p
- s
- t
+t
+smash> smash> k
+mypid
 my_sleep
+new
+p
 random1.txt
 random2.txt
+s
 sub1
 sub2
 sub3
-test_in
-test_in2
+t
+smash> k
+mypid
+my_sleep
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
 smash> smash error: open failed: No such file or directory
 smash> smash error: open failed: No such file or directory
 smash> before
-smash> cat: new: No such file or directory
-smash> chmod: cannot access 'new': No such file or directory
-smash> smash> rm: cannot remove 'new': No such file or directory
-smash>  k
- mypid
- new
- p
- s
- t
+smash> again_redirect
+test_redirect
+smash> smash> smash error: open failed: Permission denied
+smash> smash> k
+mypid
 my_sleep
+p
 random1.txt
 random2.txt
+s
 sub1
 sub2
 sub3
-test_in
-test_in2
-smash> /bin/bash: l: command not found
-smash> smash>  k
- mypid
- new
- p
- s
- t
+t
+smash> smash> k
+mypid
 my_sleep
 new
+p
 random1.txt
 random2.txt
+s
 sub1
 sub2
 sub3
-test_in
-test_in2
-smash> smash> /bin/bash: l: command not found
-smash> cat: new: No such file or directory
-smash>  k
- mypid
- new
- p
- s
- t
-my_sleep
-random1.txt
-random2.txt
-sub1
-sub2
-sub3
-test_in
-test_in2
-smash> rm: cannot remove 'new': No such file or directory
-smash> smash>  k
- mypid
- new
- p
- s
- t
+t
+smash> k
+mypid
 my_sleep
 new
+p
 random1.txt
 random2.txt
+s
 sub1
 sub2
 sub3
-test_in
-test_in2
-smash> smash> smash error: open failed: No such file or directory
-smash> cat: test/again: No such file or directory
-smash> smash> cat: sl: No such file or directory
-smash> smash> cat: sl: No such file or directory
+t
+smash> smash> smash> k
+mypid
+my_sleep
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> k
+mypid
+my_sleep
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash> smash> k
+mypid
+my_sleep
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+smash> smash> smash> k
+mypid
+my_sleep
+new
+p
+random1.txt
+random2.txt
+s
+sub1
+sub2
+sub3
+t
+test
+smash> smash> 0
+2
+4
+Done: 6
 smash> smash: sending SIGKILL signal to 1 jobs:
-12599: sleep 100&
+45054: sleep 100&

@@ -81,7 +81,7 @@ void _removeBackgroundSign(char* cmd_line) {
 
 string _removeBackgroundSignStr(string str) {
   // find last character other than spaces
-  unsigned int idx = str.find_last_not_of(WHITESPACE);
+  size_t idx = str.find_last_not_of(WHITESPACE);
   // if all characters are spaces then return
   if (idx == string::npos) {
     return str;
@@ -143,11 +143,11 @@ void GetCurrDirCommand::execute() {
   delete[] cwd;
 }
 
-ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
+ShowPidCommand::ShowPidCommand(const char* cmd_line, pid_t pid) : BuiltInCommand(cmd_line), pid(pid) {};
 
 void ShowPidCommand::execute()
 {
-  cout << "smash pid is " << getpid() << "\n";
+  cout << "smash pid is " << pid << "\n";
 }
 
 ChPromptCommand::ChPromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line)
@@ -234,7 +234,7 @@ void ExternalCommand::execute() {
       exit(1);
     }
     char *cmd_str = createCmdStr();
-    execl("/bin/bash","bash","-c",cmd_str,nullptr);
+    execl("/bin/bash","/bin/bash","-c",cmd_str,nullptr);
     _serrorSys("execv");
     delete cmd_str;
   }
@@ -267,7 +267,7 @@ string SmallShell::getName()
 ShowPidCommand::~ShowPidCommand() {};
 ChPromptCommand::~ChPromptCommand() {};
 
-SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()) {
+SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()), pid(getpid()) {
 // TODO: add your implementation
 }
 
@@ -291,7 +291,7 @@ void JobsList::printJobEntry(JobEntry& job) {
   cout << job.pid << " " << difftime(now, job.start_time) << " secs";
 
   int wstatus;
-  if (-1 != waitpid(job.pid,&wstatus, WNOHANG|WUNTRACED)) {
+  if (-1 != waitpid(job.pid,&wstatus, WNOHANG|WUNTRACED|WCONTINUED)) {
     job.is_stopped = (job.is_stopped && !WIFCONTINUED(wstatus)) || WIFSTOPPED(wstatus);
   }
 
@@ -639,7 +639,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new GetCurrDirCommand(cmd_line);
   }
   else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
+    return new ShowPidCommand(cmd_line, pid);
   }
   else if(firstWord.compare("chprompt") == 0)
   { 

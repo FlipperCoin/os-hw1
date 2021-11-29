@@ -1,9 +1,7 @@
 # First invalid args
 timeout
 timeout 4
-timeout s showpid
-timeout kdjlfkjsd sleep 10
-timeout 4fhujs sleep 50
+timeout -4 showpid
 #Check command finished before alarm
 timeout 3 ls
 !time.sleep(2)

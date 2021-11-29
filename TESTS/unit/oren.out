@@ -1,0 +1,8 @@
+smash> smash> smash> smash pid is 20643
+smash> smash> smash> smash> [1] sleep 100& : 20653 1 secs
+[2] sleep 200& : 20654 1 secs
+smash> /tmp/smash_test
+smash> smash pid is 20643
+smash pid is 20643
+smash> smash> /tmp/smash_test
+smash> 

@@ -85,10 +85,12 @@ class GetCurrDirCommand : public BuiltInCommand {
 };
 
 class ShowPidCommand : public BuiltInCommand {
- public:
-  ShowPidCommand(const char* cmd_line);
-  virtual ~ShowPidCommand();
-  void execute() override;
+  private:
+    pid_t pid;
+  public:
+    ShowPidCommand(const char* cmd_line, pid_t pid);
+    virtual ~ShowPidCommand();
+    void execute() override;
 };
 
 class ChPromptCommand : public BuiltInCommand
@@ -209,6 +211,7 @@ class SmallShell {
   pid_t fg_pid;
   jobid_t fg_jid;
   string fg_cmd;
+  pid_t pid;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator

@@ -4,8 +4,6 @@ random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
 smash> smash> test_redirect
 smash> smash> again_redirect
 smash> smash> again_redirect
@@ -22,8 +20,6 @@ random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
 smash> smash> smash> \[1\] sleep 100& : \d+ \d+ secs
 smash> smash error: kill: invalid arguments
 smash> smash> smash error: kill: invalid arguments
@@ -38,8 +34,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> smash> k
 mypid
 my_sleep
@@ -52,8 +46,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> k
 mypid
 my_sleep
@@ -66,8 +58,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> smash error: open failed: No such file or directory
 smash> smash error: open failed: No such file or directory
 smash> before
@@ -85,8 +75,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> smash> k
 mypid
 my_sleep
@@ -99,8 +87,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> k
 mypid
 my_sleep
@@ -113,8 +99,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> smash> smash> k
 mypid
 my_sleep
@@ -127,8 +111,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> k
 mypid
 my_sleep
@@ -141,8 +123,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> smash> smash> k
 mypid
 my_sleep
@@ -155,8 +135,6 @@ sub1
 sub2
 sub3
 t
-test_in
-test_in2
 smash> smash> smash> k
 mypid
 my_sleep
@@ -170,16 +148,9 @@ sub2
 sub3
 t
 test
-test_in
-test_in2
 smash> smash> 0
 2
 4
 Done: 6
-smash> smash> 0
-2
-4
-6
-Done: 8
 smash> smash: sending SIGKILL signal to 1 jobs:
 \d+: sleep 100&
