@@ -267,6 +267,13 @@ string SmallShell::getName()
 ShowPidCommand::~ShowPidCommand() {};
 ChPromptCommand::~ChPromptCommand() {};
 
+void updateStoppedStatus(JobsList::JobEntry* job) {
+  int wstatus;
+  if (-1 != waitpid(job->pid,&wstatus, WNOHANG|WUNTRACED|WCONTINUED)) {
+    job->is_stopped = (job->is_stopped && !WIFCONTINUED(wstatus)) || WIFSTOPPED(wstatus);
+  }
+}
+
 SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()), pid(getpid()) {
 // TODO: add your implementation
 }
@@ -290,10 +297,7 @@ void JobsList::printJobEntry(JobEntry& job) {
   }
   cout << job.pid << " " << difftime(now, job.start_time) << " secs";
 
-  int wstatus;
-  if (-1 != waitpid(job.pid,&wstatus, WNOHANG|WUNTRACED|WCONTINUED)) {
-    job.is_stopped = (job.is_stopped && !WIFCONTINUED(wstatus)) || WIFSTOPPED(wstatus);
-  }
+  updateStoppedStatus(&job);
 
   if (job.is_stopped) {
     cout << " (stopped)";
@@ -377,6 +381,7 @@ JobsList::JobEntry* JobsList::getLastJob(jobid_t* jobId) {
 JobsList::JobEntry* JobsList::getLastStoppedJob(jobid_t* jobId) {
   for (int i = jobs.size()-1; i >= 0; i--)
   {
+    //updateStoppedStatus(&jobs[i]);
     if (jobs[i].is_stopped) {
       *jobId = jobs[i].jid;
       return &jobs[i];
@@ -542,7 +547,8 @@ void BackgroundCommand::execute() {
       _serror("bg: job-id " + args[1] + " does not exist");
       return;
     }
-    else if (!job->is_stopped) {
+    //updateStoppedStatus(job);
+    if (!job->is_stopped) {
       _serror("bg: job-id " + args[1] + " is already running in the background");
       return;
     }
