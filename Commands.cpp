@@ -143,11 +143,11 @@ void GetCurrDirCommand::execute() {
   delete[] cwd;
 }
 
-ShowPidCommand::ShowPidCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
+ShowPidCommand::ShowPidCommand(const char* cmd_line, pid_t pid) : BuiltInCommand(cmd_line), pid(pid) {};
 
 void ShowPidCommand::execute()
 {
-  cout << "smash pid is " << getpid() << "\n";
+  cout << "smash pid is " << pid << "\n";
 }
 
 ChPromptCommand::ChPromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line)
@@ -239,7 +239,7 @@ string SmallShell::getName()
 ShowPidCommand::~ShowPidCommand() {};
 ChPromptCommand::~ChPromptCommand() {};
 
-SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()) {
+SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()), pid(getpid()) {
 // TODO: add your implementation
 }
 
@@ -611,7 +611,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new GetCurrDirCommand(cmd_line);
   }
   else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
+    return new ShowPidCommand(cmd_line, this->pid);
   }
   else if(firstWord.compare("chprompt") == 0)
   { 

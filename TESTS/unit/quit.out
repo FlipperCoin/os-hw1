@@ -1,11 +1,11 @@
 smash> smash> smash> /tmp/smash_test
-smash> smash> /bin/bash: showpid: command not found
-smash: got ctrl-Z
-smash: process 28011 was stopped
-smash> [1] sleep 100&: 28001 1 secs
-[2] sleep 50&: 28002 1 secs
-[4] sleep 20: 28011 0 secs (stopped)
+smash> smash pid is 13390
+smash> smash: got ctrl-Z
+smash: process 13398 was stopped
+smash> [1] sleep 100& : 13396 1 secs
+[2] sleep 50& : 13397 1 secs
+[3] sleep 20 : 13398 1 secs (stopped)
 smash> smash: sending SIGKILL signal to 3 jobs:
-28001: sleep 100&
-28002: sleep 50&
-28011: sleep 20
+13396: sleep 100&
+13397: sleep 50&
+13398: sleep 20

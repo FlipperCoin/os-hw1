@@ -1,16 +1,41 @@
-smash> smash error: head: invalid arguments
-smash> look here
+smash> my_sleep
+random1.txt
+ransmash> look here
 smash> /bin/bash: not_real_command: command not found
-smash> smash> smash> smash> smash> my_sleep
+smash> smash> smash> smash> my_sleep
 random1.txt
 random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
 smash> 0
 2
-4
-smash: got ctrl-Z
-smash: process 27973 was stopped
+Done: 3
+smash> smash pid is 17822
+smash> smash pid is 17822
+smash pid is 17822
+smash> /tmp/smash_test
+smash> smash> [1] sleep 100& : 17889 0 secs
+smash> /tmp/smash_test
+smash> smash> smash> [1] sleep 100& : 17889 0 secs
+[2] sleep 20& : 17892 0 secs
+[3] sleep 10& : 17893 0 secs
+smash> signal number 9 was sent to pid 17889
+smash> signal number 9 was sent to pid 17892
+smash> [3] sleep 10& : 17893 1 secs
+smash> smash> smash error: kill: job-id 1 does not exist
+smash> [3] sleep 10& : 17893 2 secs
+[4] sleep 10 & : 17898 1 secs
+smash> r directory
+smash> r directory
+smash> PWD not set
+smash> y arguments
+smash> s not exist
+smash> d arguments
+smash> d arguments
+smash> d not found
+smash> [3] sleep 10& : 17893 4 secs
+[4] sleep 10 & : 17898 3 secs
+smash> smash: sending SIGKILL signal to 2 jobs:
+17893: sleep 10&
+17898: sleep 10 &

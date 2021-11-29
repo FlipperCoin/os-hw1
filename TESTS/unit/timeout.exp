@@ -1,16 +1,12 @@
 smash> smash error: timeout: invalid arguments
 smash> smash error: timeout: invalid arguments
 smash> smash error: timeout: invalid arguments
-smash> smash error: timeout: invalid arguments
-smash> smash error: timeout: invalid arguments
 smash> my_sleep
 random1.txt
 random2.txt
 sub1
 sub2
 sub3
-test_in
-test_in2
 smash> before
 smash> smash: got an alarm
 after

@@ -11,7 +11,7 @@ import shutil
 
 TEST_DIR = '/tmp/smash_test'
 
-FILES_TO_COPY = ["test_in", "test_in2", "random1.txt", "random2.txt",  "my_sleep"]
+FILES_TO_COPY = ["random1.txt", "random2.txt",  "my_sleep"]
 
 def prepare_env():
     testsdir = os.path.dirname(os.path.abspath(__file__))
