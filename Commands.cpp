@@ -289,6 +289,12 @@ void JobsList::printJobEntry(JobEntry& job) {
     // TODO: stop? print something else?
   }
   cout << job.pid << " " << difftime(now, job.start_time) << " secs";
+
+  int wstatus;
+  if (-1 != waitpid(job.pid,&wstatus, WNOHANG|WUNTRACED)) {
+    job.is_stopped = (job.is_stopped && !WIFCONTINUED(wstatus)) || WIFSTOPPED(wstatus);
+  }
+
   if (job.is_stopped) {
     cout << " (stopped)";
   }
