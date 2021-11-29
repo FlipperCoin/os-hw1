@@ -381,7 +381,7 @@ JobsList::JobEntry* JobsList::getLastJob(jobid_t* jobId) {
 JobsList::JobEntry* JobsList::getLastStoppedJob(jobid_t* jobId) {
   for (int i = jobs.size()-1; i >= 0; i--)
   {
-    //updateStoppedStatus(&jobs[i]);
+    updateStoppedStatus(&jobs[i]);
     if (jobs[i].is_stopped) {
       *jobId = jobs[i].jid;
       return &jobs[i];
@@ -547,7 +547,7 @@ void BackgroundCommand::execute() {
       _serror("bg: job-id " + args[1] + " does not exist");
       return;
     }
-    //updateStoppedStatus(job);
+    updateStoppedStatus(job);
     if (!job->is_stopped) {
       _serror("bg: job-id " + args[1] + " is already running in the background");
       return;
