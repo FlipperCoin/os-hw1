@@ -235,7 +235,7 @@ void ExternalCommand::execute() {
     }
     char *cmd_str = createCmdStr();
     execl("/bin/bash","/bin/bash","-c",cmd_str,nullptr);
-    _serrorSys("execv");
+    _serrorSys("execl");
     delete cmd_str;
   }
   
@@ -274,7 +274,12 @@ void updateStoppedStatus(JobsList::JobEntry* job) {
   }
 }
 
-SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()), pid(getpid()) {
+bool cmp::operator()(TimeOut a, TimeOut b) const
+{
+  return a.end_time > b.end_time;
+}
+
+SmallShell::SmallShell() : prompt_name(DEFAULT_PROMPT), plast_pwd(new string()), fg_pid(getpid()), pid(getpid()), timed_list(cmp()) {
 // TODO: add your implementation
 }
 
@@ -373,12 +378,14 @@ JobsList::JobEntry* JobsList::getJobById(jobid_t jobId)
 }
 
 JobsList::JobEntry* JobsList::getLastJob(jobid_t* jobId) {
+  clearZombieJobs();
   if (jobs.size() == 0) return nullptr;
 
   return &jobs[jobs.size()-1];
 }
 
 JobsList::JobEntry* JobsList::getLastStoppedJob(jobid_t* jobId) {
+  clearZombieJobs();
   for (int i = jobs.size()-1; i >= 0; i--)
   {
     updateStoppedStatus(&jobs[i]);
@@ -392,6 +399,7 @@ JobsList::JobEntry* JobsList::getLastStoppedJob(jobid_t* jobId) {
 }
 
 JobsList::JobEntry* JobsList::getJobByPid(pid_t jobPid) {
+  clearZombieJobs();
   for (size_t i = 0; i < jobs.size(); i++) {
     if (jobs[i].pid == jobPid) {
       return &jobs[i];
@@ -411,9 +419,14 @@ void JobsList::removeJobById(jobid_t jid) {
 }
 
 void JobsList::killAllJobs() {
+  clearZombieJobs();
   cout << "smash: sending SIGKILL signal to " << jobs.size() << " jobs:" << endl;
   for (auto job : jobs) {
     cout << job.pid << ": " << job.cmd_line << endl;
+    if(kill(job.pid,SIGKILL) == -1)
+    {
+      _serrorSys("kill");
+    }
   }
 }
 
@@ -634,6 +647,71 @@ void HeadCommand::execute() {
   }
 }
 
+TimeOutCommand::TimeOutCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd, priority_queue<TimeOut,vector<TimeOut>,cmp>* timed_list) : 
+                ExternalCommand(cmd_line,jobs,fg_pid,fg_jid,fg_cmd), timed_list(timed_list){}
+
+TimeOutCommand::~TimeOutCommand() {}
+
+void TimeOutCommand::execute()
+{
+  time_t now = time(nullptr);
+  if ((time_t)-1 == now) {
+    _serrorSys("time");
+    return;
+  }
+  pid_t pid = fork();
+  if (-1 == pid) {
+    _serrorSys("fork");
+    return;
+  }
+
+  if (pid == 0) {
+    if (-1 == setpgrp()) {
+      _serrorSys("setgrp");
+      exit(1);
+    }
+    string bash_cmd = cmd_line;
+    for (int i = 0; i < 2; i++)
+    {
+      bash_cmd = bash_cmd.substr(bash_cmd.find(args[i])+args[i].size());
+    }
+
+    bash_cmd = cmd_line.substr(cmd_line.find(args[2]));
+    bash_cmd =_removeBackgroundSignStr(bash_cmd);
+    execl("/bin/bash","/bin/bash","-c",bash_cmd.c_str(),nullptr);
+    _serrorSys("execl");
+  }
+  
+  TimeOut timeout(now,time_t(stoi(args[1])),pid);
+  if(!timed_list->empty())
+  {
+    TimeOut min = timed_list->top();
+    if(min.end_time > timeout.end_time)
+    {
+      alarm(timeout.duration);
+    }
+  }
+  else
+  {
+    alarm(timeout.duration);
+  }
+  timed_list->push(timeout);
+  
+  int wstatus;
+  if (this->isBackgroundCommand) {
+    this->jobs->addJob(this->cmd_line, pid);
+  } else {
+    *fg_pid = pid;
+    *fg_cmd = this->cmd_line;
+    *fg_jid = 0;
+    int err = waitpid(pid, &wstatus, WUNTRACED);
+    *fg_pid = getpid();
+    if (-1 == err) {
+      _serrorSys("waitpid");
+    }
+  }
+}
+
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
@@ -672,6 +750,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("head") == 0) {
     return new HeadCommand(cmd_line);
+  }
+  else if(firstWord.compare("timeout") == 0) {
+    return new TimeOutCommand(cmd_line,&(this->jobs), &fg_pid, &fg_jid, &fg_cmd, &(this->timed_list));
   }
   else {
     return new ExternalCommand(cmd_line, &(this->jobs), &fg_pid, &fg_jid, &fg_cmd);

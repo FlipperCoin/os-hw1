@@ -34,9 +34,23 @@ void ctrlCHandler(int sig_num) {
 
 void alarmHandler(int sig_num, siginfo_t* info, void *ucontext) {
   SmallShell& smash = SmallShell::getInstance();
-  cout << "smash got an alarm" << endl;
+  cout << "smash: got an alarm" << endl;
+  time_t now = time(nullptr);
+  if ((time_t)-1 == now) {
+    _serrorSys("time");
+    return;
+  }
+
+  if(smash.timed_list.empty())
+    return;
+  TimeOut timeout = smash.timed_list.top();
+  smash.timed_list.pop();
+
   
-  pid_t pid = info->si_pid;
+  
+  
+  
+  pid_t pid = timeout.pid;
   string cmd_line;
   auto job = smash.jobs.getJobByPid(pid);
   if (nullptr != job) {
@@ -46,7 +60,11 @@ void alarmHandler(int sig_num, siginfo_t* info, void *ucontext) {
   else if (smash.fg_pid == pid) {
     cmd_line = smash.fg_cmd;
   }
-  else {
+  else
+  {
+    if(smash.timed_list.empty())
+      return;
+    alarm((unsigned int)(smash.timed_list.top().end_time-now));
     return;
   }
 
@@ -54,5 +72,8 @@ void alarmHandler(int sig_num, siginfo_t* info, void *ucontext) {
   if (0 != kill(pid, SIGKILL)) {
     _serrorSys("kill");
   }
+  if(smash.timed_list.empty())
+    return;
+  alarm((unsigned int)(smash.timed_list.top().end_time-now));
 }
 

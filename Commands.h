@@ -2,6 +2,7 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <queue>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
@@ -37,7 +38,7 @@ class BuiltInCommand : public Command {
 
 class JobsList;
 class ExternalCommand : public Command {
-  private:
+  protected:
     bool isBackgroundCommand;
     JobsList* jobs;
     pid_t* fg_pid;
@@ -200,6 +201,36 @@ class HeadCommand : public BuiltInCommand {
 };
 
 
+class TimeOut
+{
+public:
+  time_t timestamp;
+  time_t duration;
+  pid_t pid;
+  time_t end_time;
+  TimeOut(time_t timestamp, time_t duration,pid_t pid) : timestamp(timestamp), duration(duration), pid(pid), 
+          end_time(timestamp + duration){};
+  ~TimeOut() = default;
+};
+
+class cmp
+{
+  public:
+    bool operator()(TimeOut a, TimeOut b) const;
+};
+
+class TimeOutCommand : public ExternalCommand
+{
+  private:
+    priority_queue<TimeOut,vector<TimeOut>,cmp>* timed_list;
+  public:
+    TimeOutCommand(const char* cmd_line, JobsList* jobs, pid_t* fg_pid, jobid_t* fg_jid, string* fg_cmd , priority_queue<TimeOut,vector<TimeOut>,cmp>* timed_list);
+    virtual ~TimeOutCommand();
+    void execute() override;
+};
+
+
+
 class SmallShell {
  private:
   // TODO: Add your data members
@@ -212,6 +243,7 @@ class SmallShell {
   jobid_t fg_jid;
   string fg_cmd;
   pid_t pid;
+  priority_queue<TimeOut,vector<TimeOut>,cmp> timed_list;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
