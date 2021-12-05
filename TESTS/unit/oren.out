@@ -1,8 +1,0 @@
-smash> smash> smash> smash> smash> smash> smash pid is 24020
-smash> [1] sleep 100& : 24026 0 secs
-[2] sleep 200& : 24027 0 secs
-smash> /tmp/smash_test
-smash> smash pid is 24020
-smash> smash> /tmp/smash_test
-smash> smash pid is 24020
-smash> 
