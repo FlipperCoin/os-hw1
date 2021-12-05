@@ -655,7 +655,7 @@ TimeOutCommand::~TimeOutCommand() {}
 void TimeOutCommand::execute()
 {
   int d;
-  if (args.size() < 3 && 1 != sscanf(args[1].c_str(),"%u",&d)) {
+  if (args.size() < 3 || 1 != sscanf(args[1].c_str(),"%d",&d) || d<0) {
     _serror("timeout: invalid arguments");
     return;
   }
